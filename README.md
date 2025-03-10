@@ -1,4 +1,3 @@
-
 search, review, summarize, get specific answer to specific questions over your life digital context 
 
 audio
@@ -18,5 +17,18 @@ speaker fitlering (we identify people you speak to 24/7)
 
 <img width="1170" alt="Screenshot 2024-12-16 at 12 48 02 PM" src="https://github.com/user-attachments/assets/dc2f13e0-8745-40a5-be8d-5b34dfa97493" />
 
+**AI Video Content Generation**  
+(Gemini-powered complete video production from chat context)
+
+<img width="1142" alt="Screenshot 2024-12-16 at 12:48:02 PM" src="https://github.com/user-attachments/assets/NEW_VIDEO_FEATURE_IMAGE_ID" />
+
+- Title generation  
+- Logo design prompts  
+- Video description  
+- Complete script  
+- SEO keywords  
+- Scene descriptions  
+
+Access via "Generate Video" button → Editable modal with export options
 
 etc.
