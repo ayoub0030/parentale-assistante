@@ -40,6 +40,7 @@ import {
   ChevronsUpDown,
   Bot,
   Settings,
+  VideoIcon,
 } from "lucide-react";
 import { useToast } from "@/lib/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
@@ -102,6 +103,8 @@ import {
 } from "@/components/ui/popover";
 import { useSettings } from "@/lib/hooks/use-settings";
 import { SearchFilterGenerator } from "./search-filter-generator";
+import { VideoGenerationModal } from "./video-generation-modal";
+import { generateVideoContent, GeneratedVideoContent } from "@/lib/services/video-generation-service";
 
 interface Agent {
   id: string;
@@ -1279,6 +1282,66 @@ export function SearchChat() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentPlatform, results.length, floatingInput, isStreaming]);
 
+  // Add state for video generation
+  const [isVideoGenerationModalOpen, setIsVideoGenerationModalOpen] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [generatedVideoContent, setGeneratedVideoContent] = useState<GeneratedVideoContent>({
+    title: "",
+    logoPrompt: "",
+    description: "",
+    script: "",
+    seoKeywords: "",
+    sceneDescriptions: ""
+  });
+
+  // Add function to handle video generation
+  const handleGenerateVideo = async () => {
+    if (selectedResults.size === 0) {
+      toast({
+        title: "No content selected",
+        description: "Please select content to generate a video",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+
+    try {
+      const selectedItems = Array.from(selectedResults).map(
+        (index) => results[index]
+      );
+
+      const apiKey = settings.openaiApiKey || settings.customSettings?.geminiApiKey;
+      
+      if (!apiKey) {
+        throw new Error("No API key available for Gemini");
+      }
+
+      const content = await generateVideoContent(selectedItems, apiKey);
+      setGeneratedVideoContent(content);
+      setIsVideoGenerationModalOpen(true);
+    } catch (error) {
+      console.error("Error generating video content:", error);
+      toast({
+        title: "Generation failed",
+        description: `Failed to generate video content: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  const handleSaveVideoContent = (content: GeneratedVideoContent) => {
+    setGeneratedVideoContent(content);
+    setIsVideoGenerationModalOpen(false);
+    toast({
+      title: "Content saved",
+      description: "Video content has been saved",
+    });
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto p-4 mt-12">
       <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
@@ -2071,6 +2134,30 @@ export function SearchChat() {
                   )}
                 </Button>
 
+                {/* Add Generate Video button */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="ml-2"
+                        disabled={isGeneratingVideo || selectedResults.size === 0}
+                        onClick={handleGenerateVideo}
+                      >
+                        {isGeneratingVideo ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <VideoIcon className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Generate video content using AI</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -2101,7 +2188,13 @@ export function SearchChat() {
         )}
       </AnimatePresence>
 
-      {results.length > 0 && <Separator className="my-8" />}
+      {/* Add Video Generation Modal */}
+      <VideoGenerationModal
+        isOpen={isVideoGenerationModalOpen}
+        onClose={() => setIsVideoGenerationModalOpen(false)}
+        generatedContent={generatedVideoContent}
+        onSave={handleSaveVideoContent}
+      />
 
       {/* Display chat messages - Update this section */}
       {(chatMessages.length > 0 || isAiLoading) && (
