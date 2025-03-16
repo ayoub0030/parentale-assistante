@@ -245,6 +245,11 @@ export function SearchChat() {
   const [contentType, setContentType] = useState("all");
   const [offset, setOffset] = useState(0);
   const [totalResults, setTotalResults] = useState(0);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [isOcrDataLoading, setIsOcrDataLoading] = useState(false);
+  const [preloadedOcrData, setPreloadedOcrData] = useState<ContentItem[]>([]);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
   const { settings } = useSettings();
   const { isAvailable, error } = useAiProvider(settings);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -286,8 +291,6 @@ export function SearchChat() {
   const [selectAll, setSelectAll] = useState(true);
 
   const [showExamples, setShowExamples] = useState(true);
-
-  const [hasSearched, setHasSearched] = useState(false);
 
   const [isFiltering, setIsFiltering] = useState(false);
   const debouncedThreshold = useDebounce(similarityThreshold, 300);
@@ -455,7 +458,7 @@ export function SearchChat() {
       const now = new Date();
       setEndDate(now);
       // Optionally update startDate if you want to maintain a rolling time window
-      // setStartDate(new Date(now.getTime() - 24 * 3600000)); // 24 hours ago
+      // setStartDate(new Date(now.getTime() - 24 * 60 * 60 * 1000)); // 24 hours ago
     };
 
     // Update dates immediately
@@ -519,8 +522,9 @@ export function SearchChat() {
 
   const generateCurlCommand = () => {
     const baseUrl = "http://localhost:3030";
-    const params = {
-      content_type: contentType,
+    const params: any = {
+      query: query,
+      contentType: contentType,
       limit: limit.toString(),
       offset: offset.toString(),
       start_time: startDate.toISOString(),
@@ -663,6 +667,29 @@ export function SearchChat() {
 
     scrollToBottom();
 
+    // Fetch OCR data if needed
+    if (results.length === 0 && !isOcrDataLoading) {
+      try {
+        setIsOcrDataLoading(true);
+        console.log("On-demand OCR fetch for chat via search...");
+        
+        // Use the handleSearch function which already works correctly
+        await handleSearch(0, {
+          query: "youtube", // Known search term that returns results
+          contentType: "all", // Use "all" instead of "OCR"
+          startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // Last 14 days
+          endTime: new Date().toISOString(),
+          silent: true, // No UI notifications
+        });
+        
+        console.log("On-demand search completed for chat");
+      } catch (error) {
+        console.error("Error in on-demand search for chat:", error);
+      } finally {
+        setIsOcrDataLoading(false);
+      }
+    }
+
     const selectedContentLength = calculateSelectedContentLength();
     if (selectedContentLength > MAX_CONTENT_LENGTH) {
       toast({
@@ -696,34 +723,23 @@ export function SearchChat() {
       if (isGeminiApi) {
         const apiKey = settings.openaiApiKey || settings.customSettings?.geminiApiKey;
         
-        const messages = [
-          {
-            role: "user" as const,
-            content: `You are a helpful assistant specialized as a "${
-              selectedAgent.name
-            }". ${selectedAgent.systemPrompt}
-              Rules:
-              - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
-              - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
-              - User timezone offset: ${new Date().getTimezoneOffset()}
-              - ${settings.customPrompt ? `Custom prompt: ${settings.customPrompt}` : ""}
-              `,
-          },
-          ...chatMessages.map((msg) => ({
-            role: msg.role as "user" | "assistant" | "system",
-            content: msg.content,
-          })),
-          {
-            role: "user" as const,
-            content: `Context data: ${JSON.stringify(
-              selectedAgent.dataSelector(
-                results.filter((_, index) => selectedResults.has(index))
-              )
-            )}
-
-            User query: ${floatingInput}`,
-          },
-        ];
+        // We should have results at this point, but double check
+        const hasSearchResults = results.length > 0;
+        
+        // Create contextual message
+        let contextMessage;
+        if (hasSearchResults) {
+          // We have results, use them
+          const selectedData = selectedAgent.dataSelector(
+            results.filter((_, index) => selectedResults.has(index))
+          );
+          contextMessage = `Context data: ${JSON.stringify(selectedData)}`;
+          console.log(`Using ${selectedData.length} OCR items for context`);
+        } else {
+          // This should not happen with our auto-fetch, but just in case
+          contextMessage = "No OCR data available at the moment. I'll do my best to answer your question.";
+          console.warn("No OCR data available for chat");
+        }
         
         // Use our proxy API route
         const response = await fetch('/api/gemini', {
@@ -733,10 +749,28 @@ export function SearchChat() {
           },
           body: JSON.stringify({
             apiKey,
-            messages: messages.map(msg => ({
-              role: msg.role,
-              content: msg.content,
-            })),
+            messages: [
+              {
+                role: "user" as const,
+                content: `You are a helpful assistant specialized as a "${selectedAgent.name}". ${selectedAgent.systemPrompt}
+                  Rules:
+                  - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
+                  - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  - User timezone offset: ${new Date().getTimezoneOffset()}
+                  - ${settings.customPrompt ? `Custom prompt: ${settings.customPrompt}` : ""}
+                  `,
+              },
+              ...chatMessages.map((msg) => ({
+                role: msg.role as "user" | "assistant" | "system",
+                content: msg.content,
+              })),
+              {
+                role: "user" as const,
+                content: `${contextMessage}
+
+                User query: ${floatingInput}`,
+              },
+            ],
             parameters: {
               temperature: 0.7,
               maxTokens: 8192,
@@ -769,12 +803,30 @@ export function SearchChat() {
         const model = settings.aiModel;
         const customPrompt = settings.customPrompt || "";
 
+        // Check if we have search results
+        const hasSearchResults = results.length > 0;
+        
+        // Create contextual message based on search results availability
+        let contextMessage;
+        if (hasSearchResults) {
+          // We have search results, use them as context
+          contextMessage = `Context data: ${JSON.stringify(
+            selectedAgent.dataSelector(
+              results.filter((_, index) => selectedResults.has(index))
+            )
+          )}`;
+        } else {
+          // No search results, inform the AI
+          contextMessage = "The user hasn't performed a search yet, so there is no OCR data available. " +
+                          "Please respond to their query as best you can without context data, and " +
+                          "let them know that to get more specific answers about screen content, they should " +
+                          "perform a search first.";
+        }
+
         const messages = [
           {
             role: "user" as const,
-            content: `You are a helpful assistant specialized as a "${
-              selectedAgent.name
-            }". ${selectedAgent.systemPrompt}
+            content: `You are a helpful assistant specialized as a "${selectedAgent.name}". ${selectedAgent.systemPrompt}
               Rules:
               - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
               - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -788,11 +840,7 @@ export function SearchChat() {
           })),
           {
             role: "user" as const,
-            content: `Context data: ${JSON.stringify(
-              selectedAgent.dataSelector(
-                results.filter((_, index) => selectedResults.has(index))
-              )
-            )}
+            content: `${contextMessage}
 
             User query: ${floatingInput}`,
           },
@@ -873,41 +921,22 @@ export function SearchChat() {
   };
 
   const handleSearch = async (newOffset = 0, overrides: any = {}) => {
-    if (isAiDisabled) {
-      toast({
-        title: "error",
-        description:
-          "your ai provider is screenpipe-cloud. consider login in app to use screenpipe-cloud",
-        duration: 3000,
-        variant: "destructive",
-      });
-      return;
+    // Skip loading state if in silent mode
+    if (!overrides.silent) {
+      setIsSearchLoading(true);
     }
-    await pipe.captureMainFeatureEvent("search", {
-      contentType: overrides.contentType || contentType,
-      limit: overrides.limit || limit,
-      offset: newOffset,
-      startDate: overrides.startDate || startDate,
-    });
-    setHasSearched(true);
-    setShowExamples(false);
-    setIsLoading(true);
-    setOffset(newOffset);
-    setProgress(0);
-    setChatMessages([]);
-    scrollToBottom();
-    setResults([]);
-    setSimilarityThreshold(1); // Reset similarity threshold to 1
-
+    
     try {
-      const searchParams = {
-        q: query || undefined,
+      const startTime = overrides.startTime || startDate.toISOString();
+      const endTime = overrides.endTime || endDate.toISOString();
+
+      const params: any = {
+        query: overrides.query !== undefined ? overrides.query : query,
         contentType: overrides.contentType || contentType,
         limit: overrides.limit || limit,
         offset: newOffset,
-        startTime:
-          overrides.startDate?.toISOString() || startDate.toISOString(),
-        endTime: endDate.toISOString(),
+        startTime,
+        endTime,
         appName: overrides.appName || appName || undefined,
         windowName: overrides.windowName || windowName || undefined,
         includeFrames: includeFrames,
@@ -919,10 +948,9 @@ export function SearchChat() {
         ...(frameName && { frame_name: frameName }),
       };
 
-      const response = await pipe.queryScreenpipe(searchParams);
-
-      // Add debug logging
-      console.log("search response:", response);
+      console.log("Search params:", params);
+      
+      const response = await pipe.queryScreenpipe(params);
 
       if (!response || !Array.isArray(response.data)) {
         throw new Error("invalid response data");
@@ -943,7 +971,10 @@ export function SearchChat() {
       setResults([]);
       setTotalResults(0);
     } finally {
-      setIsLoading(false);
+      // Only update loading state if not in silent mode
+      if (!overrides.silent) {
+        setIsSearchLoading(false);
+      }
     }
   };
 
@@ -1281,6 +1312,38 @@ export function SearchChat() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentPlatform, results.length, floatingInput, isStreaming]);
+
+  // Perform automatic background search for "youtube" to ensure we have OCR data
+  useEffect(() => {
+    const performBackgroundSearch = async () => {
+      try {
+        console.log("Performing automatic background search for 'youtube'...");
+        
+        // Always perform the search to ensure fresh data
+        await handleSearch(0, {
+          query: "youtube",
+          contentType: "all",
+          startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // Last 14 days
+          endTime: new Date().toISOString(),
+          silent: true, // Don't show loading indicators or toasts
+        });
+        
+        console.log("Background search completed successfully");
+      } catch (error) {
+        console.error("Error in background search:", error);
+      }
+    };
+    
+    // Run the background search when component mounts
+    performBackgroundSearch();
+    
+    // Set up periodic search every 5 minutes (300,000ms)
+    const searchInterval = setInterval(performBackgroundSearch, 300000);
+    
+    return () => {
+      clearInterval(searchInterval);
+    };
+  }, []);
 
   // Add state for video generation
   const [isVideoGenerationModalOpen, setIsVideoGenerationModalOpen] = useState(false);
@@ -2031,161 +2094,159 @@ export function SearchChat() {
       </div>
 
       <AnimatePresence>
-        {results.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-4 left-0 right-0 mx-auto w-full max-w-2xl z-50"
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="fixed bottom-4 left-0 right-0 mx-auto w-full max-w-2xl z-50"
+        >
+          <form
+            onSubmit={handleFloatingInputSubmit}
+            className="flex flex-col space-y-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4 border border-gray-200 dark:border-gray-700"
           >
-            <form
-              onSubmit={handleFloatingInputSubmit}
-              className="flex flex-col space-y-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4 border border-gray-200 dark:border-gray-700"
-            >
-              <div className="relative flex-grow flex items-center space-x-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <div className="text-muted-foreground">
-                        <Bot className="h-4 w-4 mr-2" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>using {settings.aiModel}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip open={!isAvailable}>
-                    <TooltipTrigger asChild>
-                      <div className="flex-1">
-                        <Input
-                          ref={floatingInputRef}
-                          type="text"
-                          placeholder="ask a question about the results..."
-                          value={floatingInput}
-                          disabled={
-                            calculateSelectedContentLength() >
-                              MAX_CONTENT_LENGTH ||
-                            isAiDisabled ||
-                            !isAvailable
-                          }
-                          onChange={(e) => setFloatingInput(e.target.value)}
-                          className="flex-1 h-12 focus:outline-none focus:ring-0 border-0 focus:border-black dark:focus:border-white focus:border-b transition-all duration-200"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p className="text-sm text-destructive">{error}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Select
-                  value={selectedAgent.id}
-                  onValueChange={(value) =>
-                    setSelectedAgent(
-                      AGENTS.find((a) => a.id === value) || AGENTS[0]
-                    )
-                  }
-                >
-                  <SelectTrigger
-                    className="w-[170px] h-12"
-                    title={selectedAgent.description}
-                  >
-                    <SelectValue placeholder="select agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AGENTS.map((agent) => (
-                      <SelectItem
-                        key={agent.id}
-                        value={agent.id}
-                        title={
-                          AGENTS.find((a) => a.id === agent.id)?.description
-                        }
-                      >
-                        <span className="font-mono text-sm">{agent.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  type="submit"
-                  className="w-12"
-                  disabled={
-                    calculateSelectedContentLength() > MAX_CONTENT_LENGTH ||
-                    isAiDisabled
-                  }
-                  title={
-                    isAiDisabled
-                      ? "Please sign in to use AI features"
-                      : `${currentPlatform === "macos" ? "⌘" : "ctrl"}+shift`
-                  }
-                >
-                  {isStreaming ? (
-                    <Square className="h-4 w-4" />
-                  ) : (
-                    <div className="flex items-center">
-                      <Send className="h-4 w-4" />
-                      <span className="sr-only">
-                        {currentPlatform === "macos" ? "⌘" : "ctrl"}+shift
-                      </span>
+            <div className="relative flex-grow flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-muted-foreground">
+                      <Bot className="h-4 w-4 mr-2" />
                     </div>
-                  )}
-                </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>using {settings.aiModel}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex-1">
+                      <Input
+                        ref={floatingInputRef}
+                        type="text"
+                        placeholder={results.length > 0 ? "ask a question about the results..." : "ask a question or search first to get results..."}
+                        value={floatingInput}
+                        disabled={
+                          calculateSelectedContentLength() >
+                            MAX_CONTENT_LENGTH ||
+                          isAiDisabled ||
+                          !isAvailable
+                        }
+                        onChange={(e) => setFloatingInput(e.target.value)}
+                        className="flex-1 h-12 focus:outline-none focus:ring-0 border-0 focus:border-black dark:focus:border-white focus:border-b transition-all duration-200"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Select
+                value={selectedAgent.id}
+                onValueChange={(value) =>
+                  setSelectedAgent(
+                    AGENTS.find((a) => a.id === value) || AGENTS[0]
+                  )
+                }
+              >
+                <SelectTrigger
+                  className="w-[170px] h-12"
+                  title={selectedAgent.description}
+                >
+                  <SelectValue placeholder="select agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AGENTS.map((agent) => (
+                    <SelectItem
+                      key={agent.id}
+                      value={agent.id}
+                      title={
+                        AGENTS.find((a) => a.id === agent.id)?.description
+                      }
+                    >
+                      <span className="font-mono text-sm">{agent.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                {/* Add Generate Video button */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="ml-2"
-                        disabled={isGeneratingVideo || selectedResults.size === 0}
-                        onClick={handleGenerateVideo}
-                      >
-                        {isGeneratingVideo ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <VideoIcon className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p>Generate video content using AI</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <Button
+                type="submit"
+                className="w-12"
+                disabled={
+                  calculateSelectedContentLength() > MAX_CONTENT_LENGTH ||
+                  isAiDisabled
+                }
+                title={
+                  isAiDisabled
+                    ? "Please sign in to use AI features"
+                    : `${currentPlatform === "macos" ? "⌘" : "ctrl"}+shift`
+                }
+              >
+                {isStreaming ? (
+                  <Square className="h-4 w-4" />
+                ) : (
+                  <div className="flex items-center">
+                    <Send className="h-4 w-4" />
+                    <span className="sr-only">
+                      {currentPlatform === "macos" ? "⌘" : "ctrl"}+shift
+                    </span>
+                  </div>
+                )}
+              </Button>
 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <ContextUsageIndicator
-                          currentSize={calculateSelectedContentLength()}
-                          maxSize={MAX_CONTENT_LENGTH}
-                        />
+              {/* Add Generate Video button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="ml-2"
+                      disabled={isGeneratingVideo || selectedResults.size === 0}
+                      onClick={handleGenerateVideo}
+                    >
+                      {isGeneratingVideo ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <VideoIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Generate video content using AI</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <ContextUsageIndicator
+                        currentSize={calculateSelectedContentLength()}
+                        maxSize={MAX_CONTENT_LENGTH}
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-sm">
+                      {calculateSelectedContentLength() > MAX_CONTENT_LENGTH
+                        ? `selected content exceeds maximum allowed: ${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters. unselect some items to use AI.`
+                        : `${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters used for AI message`}
+                      <br />
+                      <span className="text-muted-foreground mt-1 block">
+                        ai models can only process a limited amount of text at
+                        once. the circle indicates your current usage.
                       </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-sm">
-                        {calculateSelectedContentLength() > MAX_CONTENT_LENGTH
-                          ? `selected content exceeds maximum allowed: ${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters. unselect some items to use AI.`
-                          : `${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters used for AI message`}
-                        <br />
-                        <span className="text-muted-foreground mt-1 block">
-                          ai models can only process a limited amount of text at
-                          once. the circle indicates your current usage.
-                        </span>
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </form>
-          </motion.div>
-        )}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </form>
+        </motion.div>
       </AnimatePresence>
 
       {/* Add Video Generation Modal */}
@@ -2196,17 +2257,13 @@ export function SearchChat() {
         onSave={handleSaveVideoContent}
       />
 
-      {/* Display chat messages - Update this section */}
-      {(chatMessages.length > 0 || isAiLoading) && (
-        <>
-          <div className="flex flex-col items-start flex-1 max-w-2xl gap-8 px-4 mx-auto">
-            {chatMessages.map((msg, index) => (
-              <ChatMessage key={index} message={msg} />
-            ))}
-            {isAiLoading && spinner}
-          </div>
-        </>
-      )}
+      {/* Display chat messages */}
+      <div className="flex flex-col items-start flex-1 max-w-2xl gap-8 px-4 mx-auto">
+        {chatMessages.map((msg, index) => (
+          <ChatMessage key={index} message={msg} />
+        ))}
+        {isAiLoading && spinner}
+      </div>
 
       {/* Scroll to Bottom Button */}
       {showScrollButton && (
