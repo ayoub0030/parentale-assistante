@@ -539,7 +539,11 @@ export function SearchChat() {
 
     const queryParams = Object.entries(params)
       .filter(([_, value]) => value !== undefined && value !== "")
-      .map(([key, value]) => `${key}=${encodeURIComponent(value!)}`)
+      .map(([key, value]) => {
+        // Make sure value is converted to string before using encodeURIComponent
+        const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        return `${key}=${encodeURIComponent(stringValue)}`;
+      })
       .join("&");
 
     return `curl "${baseUrl}/search?${queryParams}" | jq`;
@@ -673,7 +677,7 @@ export function SearchChat() {
         setIsOcrDataLoading(true);
         console.log("On-demand OCR fetch for chat via search...");
         
-        // Use the handleSearch function which already works correctly
+        // automated search function Use the handleSearch function which already works correctly
         await handleSearch(0, {
           query: "youtube", // Known search term that returns results
           contentType: "all", // Use "all" instead of "OCR"

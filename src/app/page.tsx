@@ -22,8 +22,13 @@ export default function SearchPage() {
           </AlertDescription>
         </Alert>
       )}
+
+
       <p className="text-2xl font-bold">where pixels become magic</p>
       <SearchChat />
+ 
+ 
+ 
     </div>
   );
 }
