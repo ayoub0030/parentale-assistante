@@ -41,6 +41,8 @@ import {
   Bot,
   Settings,
   VideoIcon,
+  MessageSquare,
+  Clipboard,
 } from "lucide-react";
 import { useToast } from "@/lib/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
@@ -104,7 +106,7 @@ import {
 import { useSettings } from "@/lib/hooks/use-settings";
 import { SearchFilterGenerator } from "./search-filter-generator";
 import { VideoGenerationModal } from "./video-generation-modal";
-import { generateVideoContent, GeneratedVideoContent } from "@/lib/services/video-generation-service";
+import { generateVideoContent, improveVideoContent, GeneratedVideoContent } from "@/lib/services/video-generation-service";
 
 interface Agent {
   id: string;
@@ -310,8 +312,23 @@ export function SearchChat() {
   const [currentPlatform, setCurrentPlatform] = useState<string | null>(null);
 
   const [speakerSearchQuery, setSpeakerSearchQuery] = useState("");
-
   const [frameName, setFrameName] = useState<string>("");
+  // Add the missing showChat state with default value true to keep chat visible
+  const [showChat, setShowChat] = useState(true);
+  // Add the missing messagesEndRef
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Add missing isGeneratingVideo state
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+
+  const [isVideoGenerationModalOpen, setIsVideoGenerationModalOpen] = useState(false);
+  const [generatedVideoContent, setGeneratedVideoContent] = useState<GeneratedVideoContent>({
+    title: "",
+    logoPrompt: "",
+    description: "",
+    script: "",
+    seoKeywords: "",
+    sceneDescriptions: ""
+  });
 
   useEffect(() => {
     if (Object.keys(selectedSpeakers).length > 0) {
@@ -1350,18 +1367,6 @@ export function SearchChat() {
   }, []);
 
   // Add state for video generation
-  const [isVideoGenerationModalOpen, setIsVideoGenerationModalOpen] = useState(false);
-  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-  const [generatedVideoContent, setGeneratedVideoContent] = useState<GeneratedVideoContent>({
-    title: "",
-    logoPrompt: "",
-    description: "",
-    script: "",
-    seoKeywords: "",
-    sceneDescriptions: ""
-  });
-
-  // Add function to handle video generation
   const handleGenerateVideo = async () => {
     if (selectedResults.size === 0) {
       toast({
@@ -1411,874 +1416,688 @@ export function SearchChat() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 mt-12">
-      <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
-        {/* <SidebarTrigger className="h-8 w-8" /> */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNewSearch}
-          className="h-8 w-8"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Commented out header buttons */}
+      {/* <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="outline" onClick={toggleExpanded}>
+            <Menu className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium sr-only">menu</span>
+        </div>
+      </div> */}
 
-      <div className="flex items-center justify-center mb-16">
-        {/* Add the new SearchFilterGenerator component */}
-        <SearchFilterGenerator
-          onApplyFilters={(filters) => {
-            // Always use empty string instead of undefined for text inputs
-            setQuery(filters.query ?? "");
-            setAppName(filters.appName ?? "");
-            setWindowName(filters.windowName ?? "");
+      {/* Commented out logo and platform buttons */}
+      {/* <div className="fixed top-4 right-4 z-50 flex items-center space-x-1">
+        {isModalOpen && (
+          <div className="flex items-center gap-1">
+            <Badge variant="outline" className="ml-0">
+              {currentPlatform}
+            </Badge>
+            <CloseButton onClick={closeModal} />
+          </div>
+        )}
+      </div> */}
 
-            // Use default values for other types
-            handleContentTypeFromFilter(filters.contentType ?? "all");
-            setStartDate(
-              filters.startDate ?? new Date(Date.now() - 24 * 3600000)
-            );
-            setEndDate(filters.endDate ?? new Date());
-            setLimit(filters.limit ?? 30);
-
-            // Automatically perform search with new filters
-            handleSearch(0);
-          }}
-        />
-      </div>
-      {/* Content Type Checkboxes and Code Button */}
-      <div className="flex items-center justify-center mb-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
-              <Checkbox
-                id="audio-type"
-                checked={selectedTypes.audio}
-                onCheckedChange={() => handleContentTypeChange("audio")}
-                className="h-4 w-4"
-              />
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Label htmlFor="audio-type" className="text-xs">
-                      speech
-                    </Label>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>audio transcripts</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            {currentPlatform === "macos" && (
+      {/* Commented out search form and controls */}
+      {/* <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-2">
+            <h2 className="text-xl font-bold">{showChat ? "search" : "..."}</h2>
+            <div className="flex items-center gap-2">
               <div className="flex items-center space-x-1">
                 <Checkbox
-                  id="ui-type"
-                  checked={selectedTypes.ui}
-                  onCheckedChange={() => handleContentTypeChange("ui")}
+                  id="speech-type"
+                  checked={selectedTypes.speech}
+                  onCheckedChange={() => handleContentTypeChange("speech")}
                   className="h-4 w-4"
                 />
 
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Label htmlFor="ui-type" className="text-xs">
-                        screen UI
+                      <Label htmlFor="speech-type" className="text-xs">
+                        speech
+                      </Label>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>audio text transcriptions from your microphone</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              {currentPlatform === "macos" && (
+                <div className="flex items-center space-x-1">
+                  <Checkbox
+                    id="ui-type"
+                    checked={selectedTypes.ui}
+                    onCheckedChange={() => handleContentTypeChange("ui")}
+                    className="h-4 w-4"
+                  />
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Label htmlFor="ui-type" className="text-xs">
+                          screen UI
+                        </Label>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          text emitted directly from the source code of the
+                          desktop applications
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+              <div className="flex items-center space-x-1">
+                <Checkbox
+                  id="ocr-type"
+                  checked={selectedTypes.ocr}
+                  onCheckedChange={() => handleContentTypeChange("ocr")}
+                  className="h-4 w-4"
+                />
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Label htmlFor="ocr-type" className="text-xs">
+                        screen capture
                       </Label>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>
-                        text emitted directly from the source code of the
-                        desktop applications
+                        recognized text from screenshots taken every 5s by default
                       </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <Checkbox
-                id="ocr-type"
-                checked={selectedTypes.ocr}
-                onCheckedChange={() => handleContentTypeChange("ocr")}
-                className="h-4 w-4"
-              />
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Label htmlFor="ocr-type" className="text-xs">
-                      screen capture
-                    </Label>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      recognized text from screenshots taken every 5s by default
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Existing search bar and other controls */}
-      <div className="flex items-center gap-4 mb-4">
-        {/* Keyword search - smaller width */}
-        <Input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSearch(0);
-            }
-          }}
-          placeholder="keyword search, you may leave it blank"
-          className="w-[350px]"
-          autoCorrect="off"
-          autoComplete="off"
-        />
+        <div className="flex items-center gap-4 mb-4">
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch(0);
+              }
+            }}
+            placeholder="keyword search, you may leave it blank"
+            className="w-[350px]"
+            autoCorrect="off"
+            autoComplete="off"
+          />
 
-        {/* Window name filter - increased width */}
-        <SqlAutocompleteInput
-          id="window-name"
-          type="window"
-          value={windowName}
-          onChange={setWindowName}
-          placeholder="filter by window"
-          className="w-[300px]"
-          icon={<Layout className="h-4 w-4" />}
-        />
+          <SqlAutocompleteInput
+            id="window-name"
+            type="window"
+            value={windowName}
+            onChange={setWindowName}
+            placeholder="filter by window"
+            className="w-[300px]"
+          />
 
-        {/* Advanced button */}
-        <Button
-          variant="outline"
-          onClick={() => setIsQueryParamsDialogOpen(true)}
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
+          <SqlAutocompleteInput
+            id="app-name"
+            type="app"
+            value={appName}
+            onChange={setAppName}
+            placeholder="filter by app"
+            className="w-[200px]"
+          />
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  onClick={() => handleSearch(0)}
-                  disabled={
-                    isLoading ||
-                    isAiDisabled ||
-                    !health ||
-                    health?.status === "error"
-                  }
-                  className="disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      searching...
-                    </>
+          <Button
+            onClick={() => {
+              setShowAdvancedFilters(!showAdvancedFilters);
+            }}
+            size="sm"
+            variant="ghost"
+            className="w-8 h-8"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" onClick={() => handleSearch(0)}>
+                  {isSearchLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      {currentPlatform === "macos" ? "⌘" : "ctrl"} + ↵
-                    </>
+                    <div className="flex items-center gap-1">
+                      <Search className="h-4 w-4" />
+                      <span className="hidden sm:inline">search</span>
+                      <span className="text-xs opacity-70">
+                        {currentPlatform === "macos" ? "⌘+↵" : "ctrl+↵"}
+                      </span>
+                    </div>
                   )}
                 </Button>
-              </span>
-            </TooltipTrigger>
-            {(!health || health?.status === "error" || isAiDisabled) && (
-              <TooltipContent>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
                 <p>
-                  {isAiDisabled && isServerDown ? (
-                    <>
-                      <AlertCircle className="mr-1 h-4 w-4 text-red-500 inline" />
-                      you don't have access to screenpipe-cloud <br /> and
-                      screenpipe server is down!
-                    </>
-                  ) : isServerDown ? (
-                    <>
-                      <AlertCircle className="mr-1 h-4 w-4 text-red-500 inline" />
-                      screenpipe is not running...
-                    </>
-                  ) : isAiDisabled ? (
-                    <>
-                      <AlertCircle className="mr-1 h-4 w-4 text-red-500 inline" />
-                      you don't have access to screenpipe-cloud :( <br /> please
-                      consider login!
-                    </>
-                  ) : (
-                    ""
-                  )}
+                  Press {currentPlatform === "macos" ? "⌘+enter" : "ctrl+enter"}{" "}
+                  to search
                 </p>
               </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        <div className="flex-grow space-y-2">
-          <div className="flex items-center space-x-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label htmlFor="start-date">start date</Label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>select the start date to search for content</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <DateTimePicker
-            date={startDate}
-            setDate={setStartDate}
-            className="w-full"
-          />
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
-        <div className="flex-grow space-y-2">
-          <div className="flex items-center space-x-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label htmlFor="end-date">end date</Label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>select the end date to search for content</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <DateTimePicker
-            date={endDate}
-            setDate={setEndDate}
-            className="w-full"
-          />
-        </div>
-      </div>
-
-      <div className="flex mt-4 space-x-2 justify-center">
-        <Badge
-          variant="outline"
-          className="cursor-pointer hover:bg-secondary"
-          onClick={() => handleQuickTimeFilter(30)}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          last 30m
-        </Badge>
-        <Badge
-          variant="outline"
-          className="cursor-pointer hover:bg-secondary"
-          onClick={() => handleQuickTimeFilter(60)}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          last 60m
-        </Badge>
-        <Badge
-          variant="outline"
-          className="cursor-pointer hover:bg-secondary"
-          onClick={() => handleQuickTimeFilter(24 * 60)}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          last 24h
-        </Badge>
-        <Badge
-          variant="outline"
-          className="cursor-pointer hover:bg-secondary"
-          onClick={() => handleQuickTimeFilter(7 * 24 * 60)}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          last 7d
-        </Badge>
-        <Badge
-          variant="outline"
-          className="cursor-pointer hover:bg-secondary"
-          onClick={() => handleQuickTimeFilter(30 * 24 * 60)}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          last 30d
-        </Badge>
-      </div>
-
-      <Dialog
-        open={isQueryParamsDialogOpen}
-        onOpenChange={setIsQueryParamsDialogOpen}
-      >
-        <DialogContent className="sm:max-w-[605px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>advanced search parameters</DialogTitle>
-            <DialogDescription>
-              adjust additional search parameters here.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {/* Add the curl command button at the top */}
-            <div className="flex justify-end">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="text-sm">
-                    <IconCode className="h-4 w-4 mx-2" />
-                    curl command
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>curl command</DialogTitle>
-                    <DialogDescription>
-                      you can use this curl command to make the same search
-                      request from the command line.
-                      <br />
-                      <br />
-                      <span className="text-xs text-gray-500">
-                        note: you need to have `jq` installed to use the
-                        command.
-                      </span>{" "}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="overflow-x-auto">
-                    <CodeBlock language="bash" value={generateCurlCommand()} />
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Rest of the advanced settings content */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="app-name" className="text-right">
-                app name
-              </Label>
-              <div className="col-span-3 flex items-center">
-                <SqlAutocompleteInput
-                  id="app-name"
-                  type="app"
-                  icon={<Laptop className="h-4 w-4" />}
-                  value={appName}
-                  onChange={setAppName}
-                  placeholder="filter by app name"
-                  className="flex-grow"
+        {showAdvancedFilters && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <DateTimePicker
+                  date={startDate}
+                  setDate={setStartDate}
+                  showLabel
+                  label="start date"
                 />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-400 ml-2 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>filter results by specific application names</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <DateTimePicker
+                  date={endDate}
+                  setDate={setEndDate}
+                  showLabel
+                  label="end date"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {TIME_RANGES.map((range) => (
+                  <Button
+                    key={range.name}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTimeRangeChange(range.value)}
+                    className="px-2 h-7 text-xs"
+                  >
+                    last {range.name}
+                  </Button>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="min-length" className="text-right">
-                min length
-              </Label>
-              <div className="col-span-3 flex items-center">
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs" htmlFor="min-length">
+                  min length
+                </Label>
                 <Input
                   id="min-length"
                   type="number"
+                  min="0"
                   value={minLength}
                   onChange={(e) => setMinLength(Number(e.target.value))}
-                  className="flex-grow"
+                  className="h-9"
                 />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-400 ml-2 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        enter the minimum length of the content to search for
-                        <br />
-                        usually transcriptions are short while text extracted
-                        from images can be long.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="max-length" className="text-right">
-                max length
-              </Label>
-              <div className="col-span-3 flex items-center">
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs" htmlFor="max-length">
+                  max length
+                </Label>
                 <Input
                   id="max-length"
                   type="number"
+                  min="0"
                   value={maxLength}
                   onChange={(e) => setMaxLength(Number(e.target.value))}
-                  className="flex-grow"
+                  className="h-9"
                 />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-400 ml-2 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        enter the maximum length of the content to search for
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="limit-slider" className="text-right">
-                page size: {limit}
-              </Label>
-              <div className="col-span-3 flex items-center">
-                <Slider
-                  id="limit-slider"
-                  value={[limit]}
-                  onValueChange={(value: number[]) => setLimit(value[0])}
-                  min={10}
-                  max={15000}
-                  step={10}
-                  className="flex-grow"
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs" htmlFor="limit">
+                  results per page
+                </Label>
+                <Input
+                  id="limit"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={limit}
+                  onChange={(e) => setLimit(Number(e.target.value))}
+                  className="h-9"
                 />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-400 ml-2 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        select the number of results to display. usually ai
-                        cannot ingest more than 30 OCR results at a time and
-                        1000 audio results at a time.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs">frames</span>
+                <div className="flex h-9 items-center space-x-1">
+                  <Checkbox
+                    id="include-frames"
+                    checked={includeFrames}
+                    onCheckedChange={(checked) =>
+                      setIncludeFrames(Boolean(checked))
+                    }
+                  />
+                  <Label htmlFor="include-frames" className="text-xs">
+                    include
+                  </Label>
+                  <SqlAutocompleteInput
+                    id="frame-name"
+                    type="frame"
+                    value={frameName}
+                    onChange={setFrameName}
+                    placeholder="filter by frame"
+                    disabled={!includeFrames}
+                    className="ml-1 h-9"
+                  />
+                </div>
               </div>
             </div>
           </div>
+        )}
+      </div> */}
+      
+      {/* Commented out results section with pagination */}
+      {/* <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="select-all"
+            checked={selectAll}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedResults(
+                  new Set(results.map((_, index) => index))
+                );
+                setSelectAll(true);
+              } else {
+                setSelectedResults(new Set());
+                setSelectAll(false);
+              }
+            }}
+          />
+          <Label htmlFor="select-all" className="text-sm">
+            select all results
+          </Label>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="speakers" className="text-right">
-              speakers
-            </Label>
-            <div className="col-span-3 flex items-center">
-              <Popover open={openSpeakers} onOpenChange={setOpenSpeakers}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openSpeakers}
-                    className="w-full justify-between"
-                  >
-                    {Object.values(selectedSpeakers).length > 0
-                      ? `${Object.values(selectedSpeakers)
-                          .map((s) => s.name)
-                          .join(", ")}`
-                      : "select speakers"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[350px] p-0">
-                  <Command>
-                    <CommandInput
-                      placeholder="search speakers..."
-                      value={speakerSearchQuery}
-                      onValueChange={setSpeakerSearchQuery}
-                    />
-                    <CommandList>
-                      <CommandEmpty>no speakers found.</CommandEmpty>
-                      <CommandGroup>
-                        {[...new Set(speakers)].map((speaker: Speaker) => (
-                          <CommandItem
-                            key={speaker.id}
-                            value={speaker.name}
-                            onSelect={() => handleSpeakerChange(speaker)}
-                          >
-                            <div className="flex items-center">
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedSpeakers[speaker.id]
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              <span
-                                style={{
-                                  userSelect: "none",
-                                  WebkitUserSelect: "none",
-                                  MozUserSelect: "none",
-                                  msUserSelect: "none",
-                                }}
-                              >
-                                {speaker.name}
-                              </span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          {/* Add frame name input after app name */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="frame-name" className="text-right">
-              frame name
-            </Label>
-            <div className="col-span-3 flex items-center">
-              <Input
-                id="frame-name"
-                type="text"
-                value={frameName}
-                onChange={(e) => setFrameName(e.target.value)}
-                placeholder="filter by frame name"
-                className="flex-grow"
-              />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 text-gray-400 ml-2 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      filter results by specific frame names (by default frame
-                      name is mp4 video file path)
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-          <div className="flex items-center justify-center space-x-2">
-            <Switch
-              id="include-frames"
-              checked={includeFrames}
-              onCheckedChange={setIncludeFrames}
-            />
-            <Label htmlFor="include-frames">include frames</Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    include frames in the search results. this shows the frame
-                    where the text appeared. only works for ocr. this may slow
-                    down the search.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsQueryParamsDialogOpen(false)}>
-              done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="h-4 border-l mx-2"></div>
 
-      {isLoading ? (
-        <div className="my-8 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <Switch
+            checked={hideUnselected}
+            onCheckedChange={setHideUnselected}
+            id="hide-unselected"
+          />
+          <Label
+            htmlFor="hide-unselected"
+            className="text-sm cursor-pointer"
+          >
+            hide unselected
+          </Label>
+
+          <div className="h-4 border-l mx-2"></div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedResults(removeDuplicateSelections())}
+            className="text-xs h-7"
+            disabled={isLoading || selectedResults.size === 0}
+          >
+            <Copy className="h-3 w-3 mr-1" />
+            remove duplicates
+          </Button>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="ml-1 text-xs text-muted-foreground">
+                  (?){" "}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Remove results with duplicate content</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-      ) : (
-        showExamples &&
-        results.length === 0 && (
-          <div className="my-8 flex justify-center">
-            <ExampleSearchCards onSelect={handleExampleSelect} />
-          </div>
-        )
-      )}
-      {isLoading && (
-        <div className="my-2">
-          <Progress value={progress} className="w-full" />
-        </div>
-      )}
-      {results.length > 0 && (
-        <div className="flex flex-col space-y-4 mb-4 my-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="select-all"
-                  checked={selectAll}
-                  onCheckedChange={handleSelectAll}
-                />
-                <Label htmlFor="select-all">select all results</Label>
-              </div>
 
-              <Separator orientation="vertical" className="h-4" />
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="hide-deselected"
-                  checked={hideDeselected}
-                  onCheckedChange={setHideDeselected}
-                />
-                <Label htmlFor="hide-deselected">hide unselected</Label>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSimilarityThreshold(similarityThreshold === 0.5 ? 1 : 0.5);
-                  if (similarityThreshold === 0.5) {
-                    setSelectedResults(
-                      new Set(results.map((_, index) => index))
-                    );
-                    setSelectAll(true);
-                  }
-                }}
-                disabled={isFiltering}
-                className="flex items-center gap-2 disabled:opacity-100"
-              >
-                {isFiltering ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : similarityThreshold === 0.5 ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Layers className="h-4 w-4" />
-                )}
-                {similarityThreshold === 0.5
-                  ? "duplicates removed"
-                  : "remove duplicates"}
-              </Button>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>automatically unselect similar or duplicate results</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="space-y-4">
-        {renderSearchResults()}
-        {totalResults > 0 && (
-          <div className="flex justify-between items-center mt-4">
+        {results.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button
-              onClick={handlePrevPage}
+              onClick={() => {
+                if (offset - limit >= 0) {
+                  handleSearch(offset - limit);
+                }
+              }}
               disabled={offset === 0}
-              variant="outline"
               size="sm"
+              variant="ghost"
             >
-              <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Previous</span>
             </Button>
-            <span className="text-sm text-gray-500">
-              Showing {offset + 1} - {Math.min(offset + limit, totalResults)} of{" "}
-              {totalResults}
+            <span className="text-sm">
+              {results.length > 0
+                ? `Showing ${offset + 1} - ${
+                    offset + results.length
+                  } of ${totalResults}`
+                : ""}
             </span>
             <Button
-              onClick={handleNextPage}
+              onClick={() => {
+                if (offset + limit < totalResults) {
+                  handleSearch(offset + limit);
+                }
+              }}
               disabled={offset + limit >= totalResults}
-              variant="outline"
               size="sm"
+              variant="ghost"
             >
-              Next <ChevronRight className="ml-2 h-4 w-4" />
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Next</span>
             </Button>
           </div>
         )}
-      </div>
-
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-4 left-0 right-0 mx-auto w-full max-w-2xl z-50"
-        >
-          <form
-            onSubmit={handleFloatingInputSubmit}
-            className="flex flex-col space-y-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden p-4 border border-gray-200 dark:border-gray-700"
-          >
-            <div className="relative flex-grow flex items-center space-x-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="text-muted-foreground">
-                      <Bot className="h-4 w-4 mr-2" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>using {settings.aiModel}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex-1">
-                      <Input
-                        ref={floatingInputRef}
-                        type="text"
-                        placeholder={results.length > 0 ? "ask a question about the results..." : "ask a question or search first to get results..."}
-                        value={floatingInput}
-                        disabled={
-                          calculateSelectedContentLength() >
-                            MAX_CONTENT_LENGTH ||
-                          isAiDisabled ||
-                          !isAvailable
-                        }
-                        onChange={(e) => setFloatingInput(e.target.value)}
-                        className="flex-1 h-12 focus:outline-none focus:ring-0 border-0 focus:border-black dark:focus:border-white focus:border-b transition-all duration-200"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-sm text-destructive">{error}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Select
-                value={selectedAgent.id}
-                onValueChange={(value) =>
-                  setSelectedAgent(
-                    AGENTS.find((a) => a.id === value) || AGENTS[0]
-                  )
-                }
-              >
-                <SelectTrigger
-                  className="w-[170px] h-12"
-                  title={selectedAgent.description}
-                >
-                  <SelectValue placeholder="select agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGENTS.map((agent) => (
-                    <SelectItem
-                      key={agent.id}
-                      value={agent.id}
-                      title={
-                        AGENTS.find((a) => a.id === agent.id)?.description
-                      }
-                    >
-                      <span className="font-mono text-sm">{agent.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button
-                type="submit"
-                className="w-12"
-                disabled={
-                  calculateSelectedContentLength() > MAX_CONTENT_LENGTH ||
-                  isAiDisabled
-                }
-                title={
-                  isAiDisabled
-                    ? "Please sign in to use AI features"
-                    : `${currentPlatform === "macos" ? "⌘" : "ctrl"}+shift`
-                }
-              >
-                {isStreaming ? (
-                  <Square className="h-4 w-4" />
-                ) : (
-                  <div className="flex items-center">
-                    <Send className="h-4 w-4" />
-                    <span className="sr-only">
-                      {currentPlatform === "macos" ? "⌘" : "ctrl"}+shift
-                    </span>
-                  </div>
-                )}
-              </Button>
-
-              {/* Add Generate Video button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="ml-2"
-                      disabled={isGeneratingVideo || selectedResults.size === 0}
-                      onClick={handleGenerateVideo}
-                    >
-                      {isGeneratingVideo ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <VideoIcon className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Generate video content using AI</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <ContextUsageIndicator
-                        currentSize={calculateSelectedContentLength()}
-                        maxSize={MAX_CONTENT_LENGTH}
-                      />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-sm">
-                      {calculateSelectedContentLength() > MAX_CONTENT_LENGTH
-                        ? `selected content exceeds maximum allowed: ${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters. unselect some items to use AI.`
-                        : `${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters used for AI message`}
-                      <br />
-                      <span className="text-muted-foreground mt-1 block">
-                        ai models can only process a limited amount of text at
-                        once. the circle indicates your current usage.
-                      </span>
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+      </div> */}
+      
+      {/* Main content container */}
+      <div className="grid gap-8">
+        {/* Commented out search results display */}
+        {/* <div>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          </form>
-        </motion.div>
-      </AnimatePresence>
+          ) : results.length > 0 ? (
+            <div className="space-y-4">
+              {results
+                .filter((_, index) => !hideUnselected || selectedResults.has(index))
+                .map((result, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "border rounded-lg p-4 relative",
+                      selectedResults.has(index)
+                        ? "bg-muted border-primary"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id={`result-${index}`}
+                        checked={selectedResults.has(index)}
+                        onCheckedChange={(checked) => {
+                          const newSelected = new Set(selectedResults);
+                          if (checked) {
+                            newSelected.add(index);
+                          } else {
+                            newSelected.delete(index);
+                            setSelectAll(false);
+                          }
+                          setSelectedResults(newSelected);
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <div
+                            className={cn(
+                              "text-xs inline-flex items-center rounded-full px-2 py-0.5 font-medium",
+                              result.content_type === "OCR"
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                                : result.content_type === "SPEECH"
+                                ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                                : "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
+                            )}
+                          >
+                            {result.content_type}
+                          </div>
+                          <div className="flex gap-1 flex-wrap ml-2">
+                            {result.app && (
+                              <Badge variant="outline" className="ml-1 text-xs h-5">
+                                {result.app}
+                              </Badge>
+                            )}
+                            {result.window && (
+                              <Badge variant="outline" className="ml-1 text-xs h-5">
+                                {result.window}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm line-clamp-8 whitespace-pre-wrap break-words">
+                          {result.content}
+                        </p>
+                        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                          {new Date(result.timestamp).toLocaleString()}
+                          {result.content_length && (
+                            <>
+                              <span className="mx-1">•</span>
+                              <span>{result.content_length} chars</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : hasSearched ? (
+            <div className="text-center py-8">
+              <div className="flex justify-center mb-2">
+                <File className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium">No results found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Try a different search term or adjusting your filters
+              </p>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="flex justify-center mb-2">
+                <Search className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium">Search your history</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Use the search bar to query your recorded content
+              </p>
+              {showExamples && (
+                <div className="flex flex-col gap-2 mt-4 max-w-md mx-auto">
+                  <p className="text-sm font-medium">Example searches:</p>
+                  {EXAMPLE_SEARCHES.map((example) => (
+                    <Button
+                      key={example}
+                      variant="outline"
+                      className="text-sm"
+                      onClick={() => {
+                        setQuery(example);
+                        handleSearch(0);
+                      }}
+                    >
+                      {example}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div> */}
+        
+        {/* Chat container - keep this visible */}
+        <div className={cn(showChat ? "block" : "hidden", "mt-6")}>
+          <div className="relative min-h-[300px] border rounded-lg p-4">
+            {/* Chat messages container */}
+            <div ref={messagesEndRef} className="space-y-4 mb-14">
+              {chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex gap-3 p-3 rounded-lg",
+                    msg.role === "user" ? "bg-muted" : ""
+                  )}
+                >
+                  {msg.role === "user" ? (
+                    <MessageSquare className="h-6 w-6 mt-1 text-blue-500" />
+                  ) : (
+                    <div className="flex-shrink-0 mt-1">
+                      <Bot className="h-6 w-6 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex-1 overflow-hidden">
+                    {msg.role === "assistant" && msg.content === "" ? (
+                      <div className="flex gap-1 items-center">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-muted-foreground text-sm">
+                          Thinking...
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="prose dark:prose-invert prose-sm max-w-none">
+                        {msg.content}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {/* End of messages marker */}
+              <div className="h-4" />
+            </div>
 
-      {/* Add Video Generation Modal */}
-      <VideoGenerationModal
-        isOpen={isVideoGenerationModalOpen}
-        onClose={() => setIsVideoGenerationModalOpen(false)}
-        generatedContent={generatedVideoContent}
-        onSave={handleSaveVideoContent}
-      />
+            {/* Fixed input at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <form onSubmit={handleFloatingInputSubmit}>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="ask a question about the results..."
+                    value={floatingInput}
+                    onChange={(e) => setFloatingInput(e.target.value)}
+                    disabled={isStreaming}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={
+                      calculateSelectedContentLength() > MAX_CONTENT_LENGTH ||
+                      isAiDisabled
+                    }
+                    title={
+                      isAiDisabled
+                        ? "Please sign in to use AI features"
+                        : `${currentPlatform === "macos" ? "⌘" : "ctrl"}+shift`
+                    }
+                  >
+                    {isStreaming ? (
+                      <Square className="h-4 w-4" />
+                    ) : (
+                      <div className="flex items-center">
+                        <Send className="h-4 w-4" />
+                        <span className="sr-only">
+                          {currentPlatform === "macos" ? "⌘" : "ctrl"}+shift
+                        </span>
+                      </div>
+                    )}
+                  </Button>
 
-      {/* Display chat messages */}
-      <div className="flex flex-col items-start flex-1 max-w-2xl gap-8 px-4 mx-auto">
-        {chatMessages.map((msg, index) => (
-          <ChatMessage key={index} message={msg} />
-        ))}
-        {isAiLoading && spinner}
+                  {/* Add Generate Video button */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="ml-2"
+                          disabled={isGeneratingVideo || selectedResults.size === 0}
+                          onClick={handleGenerateVideo}
+                        >
+                          {isGeneratingVideo ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <VideoIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Generate video content using AI</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <ContextUsageIndicator
+                            currentSize={calculateSelectedContentLength()}
+                            maxSize={MAX_CONTENT_LENGTH}
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">
+                          {calculateSelectedContentLength() > MAX_CONTENT_LENGTH
+                            ? `selected content exceeds maximum allowed: ${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters. unselect some items to use AI.`
+                            : `${calculateSelectedContentLength()} / ${MAX_CONTENT_LENGTH} characters used for AI message`}
+                          <br />
+                          <span className="text-muted-foreground mt-1 block">
+                            ai models can only process a limited amount of text at
+                            once. the circle indicates your current usage.
+                          </span>
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </form>
+            </div>
+            {isGeneratingVideo && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-3xl w-full">
+                  <h2 className="text-xl font-bold mb-4">Generating Video Content</h2>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Creating complete video production content using AI. This may take a
+                      moment...
+                    </p>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div className="bg-primary h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Scroll to Bottom Button */}
-      {showScrollButton && (
-        <Button
-          className="fixed bottom-4 right-4 rounded-full p-2"
-          onClick={scrollToBottom}
-        >
-          <ChevronDown className="h-6 w-6" />
-        </Button>
+      {/* Video generation modal */}
+      {generatedVideoContent && (
+        <VideoGenerationModal
+          isOpen={isVideoGenerationModalOpen}
+          onClose={() => setIsVideoGenerationModalOpen(false)}
+          generatedContent={generatedVideoContent}
+          onSave={(content) => {
+            setGeneratedVideoContent(content);
+            setIsVideoGenerationModalOpen(false);
+            toast({
+              title: "Content saved",
+              description: "Video content has been saved",
+            });
+          }}
+          onImprove={async (field) => {
+            try {
+              const apiKey = settings.openaiApiKey || settings.customSettings?.geminiApiKey;
+              if (!apiKey) {
+                throw new Error("No API key available");
+              }
+              
+              return await improveVideoContent(field, generatedVideoContent[field], apiKey);
+            } catch (error) {
+              console.error(`Error improving ${field}:`, error);
+              toast({
+                title: "Improvement failed",
+                description: `Failed to improve ${field}: ${error instanceof Error ? error.message : "Unknown error"}`,
+                variant: "destructive",
+              });
+              return generatedVideoContent[field];
+            }
+          }}
+        />
       )}
-      {results.length > 0 && <div className="h-32" />}
     </div>
   );
 }
