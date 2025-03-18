@@ -95,7 +95,7 @@ const AGENTS: Agent[] = [
   },
 ];
 
-export function ChatInterface() {
+export function ChatInterface({ mode = "parent" }: { mode?: "parent" | "child" }) {
   // Core state
   const { toast } = useToast();
   const { settings } = useSettings();
