@@ -644,145 +644,289 @@ export function ChatInterface({ mode = "parent" }: { mode?: "parent" | "child" }
   };
 
   // Render component
-  return (
-    <div className="w-full max-w-2xl mx-auto p-4 mt-12">
-      <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNewSearch}
-          className="h-8 w-8"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Chat Messages */}
-      <div className="space-y-4 mb-20 mt-8">
-        {/* Welcome message when no chat messages */}
-        {chatMessages.length === 0 && (
-          <div className="text-center p-8">
-            <div className="mb-4">
-              <Bot className="w-12 h-12 mx-auto text-primary opacity-70" />
-            </div>
-            <h2 className="text-2xl font-semibold mb-2">
-              AI Assistant
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              Ask a question about your screen recordings or anything else
-            </p>
-          </div>
-        )}
-        
-        {chatMessages.map((message, index) => (
-          <ChatMessage
-            key={message.id}
-            message={message}
-          />
-        ))}
-      </div>
-
-      {/* Video Generation Modal */}
-      <VideoGenerationModal
-        isOpen={isVideoGenerationModalOpen}
-        onClose={() => setIsVideoGenerationModalOpen(false)}
-        generatedContent={{
-          title: generatedVideoContent?.title || "",
-          logoPrompt: generatedVideoContent?.logoPrompt || "",
-          description: generatedVideoContent?.description || "",
-          script: generatedVideoContent?.script || "",
-          seoKeywords: generatedVideoContent?.seoKeywords || "",
-          sceneDescriptions: generatedVideoContent?.sceneDescriptions || ""
-        }}
-        onSave={handleSaveVideoContent}
-      />
-
-      {/* Floating Chat Input */}
-      <div className="fixed bottom-4 left-0 right-0 flex justify-center z-40">
-        <form
-          onSubmit={handleFloatingInputSubmit}
-          className="flex w-full max-w-2xl items-center space-x-2 bg-background border rounded-lg p-2 shadow-lg"
-        >
-          <Input
-            ref={floatingInputRef}
-            type="text"
-            placeholder="Ask anything... (press / to focus)"
-            value={floatingInput}
-            onChange={(e) => setFloatingInput(e.target.value)}
-            className="flex-grow"
-            disabled={isStreaming}
-          />
-
-          {isStreaming ? (
-            <Button
-              type="submit"
-              size="icon"
-              onClick={(e) => {
-                e.preventDefault();
-                handleStopStreaming();
-              }}
-              className="h-8 w-8"
-            >
-              <Square className="h-4 w-4" />
-            </Button>
-          ) : (
-            <>
-              <Select
-                value={selectedAgent.id}
-                onValueChange={(value) => {
-                  const agent = AGENTS.find((a) => a.id === value);
-                  if (agent) setSelectedAgent(agent);
-                }}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Select agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGENTS.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button type="submit" size="icon" className="h-8 w-8" disabled={!floatingInput.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
-              
-              {/* Video Generation Button */}
-              {results.length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleGenerateVideo}
-                  disabled={isGeneratingVideo}
-                  className="h-8 w-8"
-                >
-                  {isGeneratingVideo ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <VideoIcon className="h-4 w-4" />
-                  )}
-                </Button>
-              )}
-            </>
-          )}
-        </form>
-      </div>
-
-      {showScrollButton && (
-        <div className="fixed bottom-24 right-4 z-50">
+  if (mode === "child") {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-4 mt-12">
+        <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            onClick={scrollToBottom}
-            className="rounded-full shadow-lg"
+            onClick={handleNewSearch}
+            className="h-8 w-8"
           >
-            <ChevronDown className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
-      )}
-    </div>
-  );
+
+        {/* Chat Messages */}
+        <div className="space-y-4 mb-20 mt-8">
+          {/* Welcome message when no chat messages */}
+          {chatMessages.length === 0 && (
+            <div className="text-center p-8">
+              <div className="mb-4">
+                <Bot className="w-12 h-12 mx-auto text-primary opacity-70" />
+              </div>
+              <h2 className="text-2xl font-semibold mb-2">
+                AI Assistant
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Ask a question about your screen recordings or anything else
+              </p>
+            </div>
+          )}
+          
+          {chatMessages.map((message, index) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+            />
+          ))}
+        </div>
+
+        {/* Video Generation Modal */}
+        <VideoGenerationModal
+          isOpen={isVideoGenerationModalOpen}
+          onClose={() => setIsVideoGenerationModalOpen(false)}
+          generatedContent={{
+            title: generatedVideoContent?.title || "",
+            logoPrompt: generatedVideoContent?.logoPrompt || "",
+            description: generatedVideoContent?.description || "",
+            script: generatedVideoContent?.script || "",
+            seoKeywords: generatedVideoContent?.seoKeywords || "",
+            sceneDescriptions: generatedVideoContent?.sceneDescriptions || ""
+          }}
+          onSave={handleSaveVideoContent}
+        />
+
+        {/* Floating Chat Input */}
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center z-40">
+          <form
+            onSubmit={handleFloatingInputSubmit}
+            className="flex w-full max-w-2xl items-center space-x-2 bg-background border rounded-lg p-2 shadow-lg"
+          >
+            <Input
+              ref={floatingInputRef}
+              type="text"
+              placeholder="Ask anything... (press / to focus)"
+              value={floatingInput}
+              onChange={(e) => setFloatingInput(e.target.value)}
+              className="flex-grow"
+              disabled={isStreaming}
+            />
+
+            {isStreaming ? (
+              <Button
+                type="submit"
+                size="icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleStopStreaming();
+                }}
+                className="h-8 w-8"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            ) : (
+              <>
+                <Select
+                  value={selectedAgent.id}
+                  onValueChange={(value) => {
+                    const agent = AGENTS.find((a) => a.id === value);
+                    if (agent) setSelectedAgent(agent);
+                  }}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Select agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AGENTS.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="submit" size="icon" className="h-8 w-8" disabled={!floatingInput.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+                
+                {/* Video Generation Button */}
+                {results.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleGenerateVideo}
+                    disabled={isGeneratingVideo}
+                    className="h-8 w-8"
+                  >
+                    {isGeneratingVideo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <VideoIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+          </form>
+        </div>
+
+        {showScrollButton && (
+          <div className="fixed bottom-24 right-4 z-50">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={scrollToBottom}
+              className="rounded-full shadow-lg"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  } else {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-4 mt-12">
+        <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleNewSearch}
+            className="h-8 w-8"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Chat Messages */}
+        <div className="space-y-4 mb-20 mt-8">
+          {/* Welcome message when no chat messages */}
+          {chatMessages.length === 0 && (
+            <div className="text-center p-8">
+              <div className="mb-4">
+                <Bot className="w-12 h-12 mx-auto text-primary opacity-70" />
+              </div>
+              <h2 className="text-2xl font-semibold mb-2">
+                AI Assistant
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Ask a question about your screen recordings or anything else
+              </p>
+            </div>
+          )}
+          
+          {chatMessages.map((message, index) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+            />
+          ))}
+        </div>
+
+        {/* Video Generation Modal */}
+        <VideoGenerationModal
+          isOpen={isVideoGenerationModalOpen}
+          onClose={() => setIsVideoGenerationModalOpen(false)}
+          generatedContent={{
+            title: generatedVideoContent?.title || "",
+            logoPrompt: generatedVideoContent?.logoPrompt || "",
+            description: generatedVideoContent?.description || "",
+            script: generatedVideoContent?.script || "",
+            seoKeywords: generatedVideoContent?.seoKeywords || "",
+            sceneDescriptions: generatedVideoContent?.sceneDescriptions || ""
+          }}
+          onSave={handleSaveVideoContent}
+        />
+
+        {/* Floating Chat Input */}
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center z-40">
+          <form
+            onSubmit={handleFloatingInputSubmit}
+            className="flex w-full max-w-2xl items-center space-x-2 bg-background border rounded-lg p-2 shadow-lg"
+          >
+            <Input
+              ref={floatingInputRef}
+              type="text"
+              placeholder="Ask anything... (press / to focus)"
+              value={floatingInput}
+              onChange={(e) => setFloatingInput(e.target.value)}
+              className="flex-grow"
+              disabled={isStreaming}
+            />
+
+            {isStreaming ? (
+              <Button
+                type="submit"
+                size="icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleStopStreaming();
+                }}
+                className="h-8 w-8"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            ) : (
+              <>
+                <Select
+                  value={selectedAgent.id}
+                  onValueChange={(value) => {
+                    const agent = AGENTS.find((a) => a.id === value);
+                    if (agent) setSelectedAgent(agent);
+                  }}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Select agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AGENTS.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="submit" size="icon" className="h-8 w-8" disabled={!floatingInput.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+                
+                {/* Video Generation Button */}
+                {results.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleGenerateVideo}
+                    disabled={isGeneratingVideo}
+                    className="h-8 w-8"
+                  >
+                    {isGeneratingVideo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <VideoIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+          </form>
+        </div>
+
+        {showScrollButton && (
+          <div className="fixed bottom-24 right-4 z-50">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={scrollToBottom}
+              className="rounded-full shadow-lg"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 }
