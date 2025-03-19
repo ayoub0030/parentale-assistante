@@ -33,36 +33,38 @@ export default function Navbar() {
   return (
     <nav className="w-full border-b border-gray-200 bg-white py-2 px-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center border rounded-md overflow-hidden">
-            <span 
+        <div className="flex items-center">
+          <div 
+            className="flex items-center border rounded-full overflow-hidden cursor-pointer"
+            onClick={() => handleModeToggle(!isParentMode)}
+          >
+            <div 
               className={cn(
-                "px-3 py-1 text-sm font-medium transition-colors", 
+                "px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-2",
                 isParentMode 
                   ? "bg-blue-500 text-white" 
-                  : "bg-white text-gray-700"
+                  : "bg-white text-gray-500 hover:text-gray-700"
               )}
             >
-              parent
-            </span>
-            <span 
+              <span>parent</span>
+              {isParentMode && (
+                <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+              )}
+            </div>
+            <div 
               className={cn(
-                "px-3 py-1 text-sm font-medium transition-colors", 
+                "px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-2",
                 !isParentMode 
                   ? "bg-green-500 text-white" 
-                  : "bg-white text-gray-700"
+                  : "bg-white text-gray-500 hover:text-gray-700"
               )}
             >
-              child
-            </span>
+              <span>child</span>
+              {!isParentMode && (
+                <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+              )}
+            </div>
           </div>
-          <Switch 
-            checked={isParentMode}
-            onCheckedChange={handleModeToggle}
-            className={cn(
-              isParentMode ? "bg-blue-500" : "bg-green-500"
-            )}
-          />
         </div>
 
         <div className="flex space-x-4">
