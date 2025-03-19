@@ -81,7 +81,7 @@ export default function Navbar() {
               <Link href="/parent/child" className="text-gray-700 hover:text-blue-500 font-medium">
                 Child
               </Link>
-              <Link href="/parent/task" className="text-gray-700 hover:text-blue-500 font-medium">
+              <Link href="/parent/tasks" className="text-gray-700 hover:text-blue-500 font-medium">
                 Task
               </Link>
               <Link href="/parent/report" className="text-gray-700 hover:text-blue-500 font-medium">
