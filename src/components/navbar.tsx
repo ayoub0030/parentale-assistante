@@ -13,9 +13,13 @@ export default function Navbar() {
 
   // Check current path to set the correct mode
   useEffect(() => {
-    if (pathname.includes("/child")) {
+    // Only check the first segment of the path to determine mode
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const rootSegment = pathSegments[0] || '';
+    
+    if (rootSegment === "child") {
       setIsParentMode(false);
-    } else {
+    } else if (rootSegment === "parent") {
       setIsParentMode(true);
     }
   }, [pathname]);
