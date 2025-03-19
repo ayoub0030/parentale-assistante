@@ -31,11 +31,11 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="w-full border-b border-gray-200 bg-white py-2 px-4">
-      <div className="flex items-center justify-between">
+    <nav className="w-full border-b border-gray-200 bg-white py-4 px-4 md:px-6 lg:px-8">
+      <div className="max-w-[1600px] mx-auto flex items-center justify-between">
         <div className="flex items-center">
           <div 
-            className="flex items-center border rounded-full overflow-hidden cursor-pointer"
+            className="flex items-center border rounded-full overflow-hidden cursor-pointer shadow-sm"
             onClick={() => handleModeToggle(!isParentMode)}
           >
             <div 
@@ -67,7 +67,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div className="flex space-x-4">
+        <div className="flex space-x-6">
           {isParentMode ? (
             <>
               <Link href="/parent/chat" className="text-gray-700 hover:text-blue-500 font-medium">
