@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,28 +36,47 @@ export interface KidProfile {
 interface KidProfileFormProps {
   onSubmit: (profile: KidProfile) => void;
   isLoading?: boolean;
+  existingProfile?: KidProfile;
+  isEditing?: boolean;
 }
 
-export function KidProfileForm({ onSubmit, isLoading = false }: KidProfileFormProps) {
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
-  const [interests, setInterests] = useState("");
-  const [personality, setPersonality] = useState("");
-  const [learningStyle, setLearningStyle] = useState("");
+export function KidProfileForm({ 
+  onSubmit, 
+  isLoading = false, 
+  existingProfile, 
+  isEditing = false 
+}: KidProfileFormProps) {
+  const [name, setName] = useState(existingProfile?.name || "");
+  const [age, setAge] = useState(existingProfile?.age ? existingProfile.age.toString() : "");
+  const [gender, setGender] = useState(existingProfile?.gender || "");
+  const [interests, setInterests] = useState(existingProfile?.interests ? existingProfile.interests.join(", ") : "");
+  const [personality, setPersonality] = useState(existingProfile?.personality || "");
+  const [learningStyle, setLearningStyle] = useState(existingProfile?.learningStyle || "");
+  
+  // Update form when existingProfile changes (e.g., when switching between profiles)
+  useEffect(() => {
+    if (existingProfile) {
+      setName(existingProfile.name);
+      setAge(existingProfile.age.toString());
+      setGender(existingProfile.gender);
+      setInterests(existingProfile.interests.join(", "));
+      setPersonality(existingProfile.personality);
+      setLearningStyle(existingProfile.learningStyle);
+    }
+  }, [existingProfile]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const profile: KidProfile = {
-      id: crypto.randomUUID(),
+      id: existingProfile?.id || crypto.randomUUID(),
       name,
       age: parseInt(age, 10),
       gender,
       interests: interests.split(",").map(i => i.trim()),
       personality,
       learningStyle,
-      createdAt: new Date()
+      createdAt: existingProfile?.createdAt || new Date()
     };
     
     onSubmit(profile);
@@ -66,9 +85,13 @@ export function KidProfileForm({ onSubmit, isLoading = false }: KidProfileFormPr
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl text-blue-600">Create Kid Profile</CardTitle>
+        <CardTitle className="text-2xl text-blue-600">
+          {isEditing ? "Edit Kid Profile" : "Create Kid Profile"}
+        </CardTitle>
         <CardDescription>
-          Fill in the details about your child to personalize their experience
+          {isEditing 
+            ? "Update your child's profile information" 
+            : "Fill in the details about your child to personalize their experience"}
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -154,7 +177,9 @@ export function KidProfileForm({ onSubmit, isLoading = false }: KidProfileFormPr
         
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating Profile..." : "Create Profile"}
+            {isLoading 
+              ? (isEditing ? "Updating Profile..." : "Creating Profile...") 
+              : (isEditing ? "Update Profile" : "Create Profile")}
           </Button>
         </CardFooter>
       </form>

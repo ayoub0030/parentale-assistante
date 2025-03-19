@@ -38,6 +38,8 @@ export default function ParentChildPage() {
   } = useKidProfiles();
   
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [profileToEdit, setProfileToEdit] = useState<KidProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("recent");
   const [parentNote, setParentNote] = useState("");
@@ -45,6 +47,17 @@ export default function ParentChildPage() {
   const handleAddProfile = (profile: KidProfile) => {
     addProfile(profile);
     setShowAddForm(false);
+  };
+  
+  const handleEditProfile = (profile: KidProfile) => {
+    setProfileToEdit(profile);
+    setShowEditForm(true);
+  };
+  
+  const handleUpdateProfile = (updatedProfile: KidProfile) => {
+    updateProfile(updatedProfile);
+    setShowEditForm(false);
+    setProfileToEdit(null);
   };
   
   const handleDeleteProfile = (profileId: string) => {
@@ -104,6 +117,31 @@ export default function ParentChildPage() {
           Back to Profiles
         </Button>
         <KidProfileForm onSubmit={handleAddProfile} isLoading={isLoading} />
+      </div>
+    );
+  }
+  
+  // Show the form when editing a profile
+  if (showEditForm && profileToEdit) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <Button 
+          variant="ghost" 
+          className="mb-6 flex items-center gap-2 text-base"
+          onClick={() => {
+            setShowEditForm(false);
+            setProfileToEdit(null);
+          }}
+        >
+          <ChevronLeft size={18} />
+          Back to Profiles
+        </Button>
+        <KidProfileForm 
+          onSubmit={handleUpdateProfile} 
+          isLoading={isLoading} 
+          existingProfile={profileToEdit}
+          isEditing={true}
+        />
       </div>
     );
   }
@@ -184,8 +222,7 @@ export default function ParentChildPage() {
                               className="h-8 w-8" 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Implement edit functionality
-                                alert("Edit functionality to be implemented");
+                                handleEditProfile(profile);
                               }}
                             >
                               <Pencil size={14} />
@@ -204,33 +241,24 @@ export default function ParentChildPage() {
                           </div>
                         </div>
                         
-                        <div className="mt-3">
-                          <div className="flex flex-wrap gap-1.5 mb-3">
-                            {profile.interests.slice(0, 3).map((interest, index) => (
-                              <Badge key={index} variant="outline" className={`text-xs ${textColor} border-current px-2 py-1`}>
-                                {interest}
-                              </Badge>
-                            ))}
-                            {profile.interests.length > 3 && (
-                              <Badge variant="outline" className="text-xs text-gray-500 px-2 py-1">
-                                +{profile.interests.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-                            <span className="capitalize">{profile.learningStyle} learner</span>
-                            
-                            {/* Mini progress indicators */}
-                            <div className="flex items-center gap-1">
-                              <div className="h-1.5 w-16 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full ${profile.gender === "male" ? "bg-blue-500" : "bg-pink-500"}`} 
-                                  style={{ width: `${Math.random() * 100}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {profile.interests.slice(0, 2).map((interest, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {interest}
+                            </Badge>
+                          ))}
+                          {profile.interests.length > 2 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{profile.interests.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="mt-3 flex items-center gap-1">
+                          <span className="text-xs text-gray-500">Learning style:</span>
+                          <Badge variant="outline" className="capitalize text-xs">
+                            {profile.learningStyle}
+                          </Badge>
                         </div>
                       </div>
                     </div>
@@ -244,24 +272,24 @@ export default function ParentChildPage() {
         {/* Right Column - Selected Child Details */}
         <div className="lg:w-2/3">
           {selectedProfile ? (
-            <div className="border rounded-lg shadow-sm overflow-hidden">
-              <div className={`p-8 ${selectedProfile.gender === "male" ? "bg-blue-50" : "bg-pink-50"}`}>
+            <div className="space-y-6">
+              <div className={`rounded-lg p-6 ${selectedProfile.gender === "male" ? "bg-blue-50" : "bg-pink-50"}`}>
                 <div className="flex items-center gap-6">
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-xl font-bold ${selectedProfile.gender === "male" ? "bg-blue-500" : "bg-pink-500"}`}>
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl ${selectedProfile.gender === "male" ? "bg-blue-500" : "bg-pink-500"}`}>
                     {selectedProfile.name.substring(0, 1).toUpperCase()}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{selectedProfile.name}</h2>
-                    <div className="flex items-center gap-2 text-gray-600 mt-1">
-                      <span>{selectedProfile.age} years old</span>
+                    <h2 className="text-3xl font-bold">{selectedProfile.name}</h2>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-lg">{selectedProfile.age} years old</span>
                       <span>•</span>
-                      <span className="capitalize">{selectedProfile.gender}</span>
+                      <span className="capitalize text-lg">{selectedProfile.gender}</span>
                       <span>•</span>
-                      <span className="capitalize">{selectedProfile.learningStyle} learner</span>
+                      <span className="capitalize text-lg">{selectedProfile.learningStyle}</span>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 mt-3">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {selectedProfile.interests.map((interest, index) => (
-                        <Badge key={index} variant="outline" className="text-xs px-2 py-1">
+                        <Badge key={index} variant="secondary">
                           {interest}
                         </Badge>
                       ))}
@@ -270,212 +298,74 @@ export default function ParentChildPage() {
                 </div>
               </div>
               
-              <Tabs defaultValue="recent" value={activeTab} onValueChange={setActiveTab} className="p-8">
-                <TabsList className="grid grid-cols-4 mb-8">
-                  <TabsTrigger value="recent" className="flex items-center gap-1.5 py-2.5">
-                    <Clock size={16} />
-                    <span>Recent Activities</span>
+              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-4 mb-6">
+                  <TabsTrigger value="recent" className="py-2.5">
+                    <div className="flex flex-col items-center gap-1">
+                      <Clock size={16} />
+                      <span>Recent</span>
+                    </div>
                   </TabsTrigger>
-                  <TabsTrigger value="tasks" className="flex items-center gap-1.5 py-2.5">
-                    <Calendar size={16} />
-                    <span>Upcoming Tasks</span>
+                  <TabsTrigger value="tasks" className="py-2.5">
+                    <div className="flex flex-col items-center gap-1">
+                      <Calendar size={16} />
+                      <span>Tasks</span>
+                    </div>
                   </TabsTrigger>
-                  <TabsTrigger value="progress" className="flex items-center gap-1.5 py-2.5">
-                    <BarChart3 size={16} />
-                    <span>Learning Progress</span>
+                  <TabsTrigger value="progress" className="py-2.5">
+                    <div className="flex flex-col items-center gap-1">
+                      <BarChart3 size={16} />
+                      <span>Progress</span>
+                    </div>
                   </TabsTrigger>
-                  <TabsTrigger value="recommendations" className="flex items-center gap-1.5 py-2.5">
-                    <Lightbulb size={16} />
-                    <span>Recommendations</span>
+                  <TabsTrigger value="notes" className="py-2.5">
+                    <div className="flex flex-col items-center gap-1">
+                      <MessageSquare size={16} />
+                      <span>Notes</span>
+                    </div>
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="recent" className="space-y-6">
-                  <h3 className="text-lg font-medium mb-5">Recent Activities</h3>
-                  
-                  <div className="space-y-4">
-                    {/* Example activity items - would be dynamic in a real app */}
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-5 flex items-start gap-4">
-                        <div className="bg-green-100 text-green-700 p-3 rounded-full">
-                          <Award size={20} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between">
-                            <h4 className="font-medium text-base">Completed Math Quiz</h4>
-                            <span className="text-sm text-gray-500">2 days ago</span>
+                <TabsContent value="recent" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Recent Activities</CardTitle>
+                      <CardDescription>
+                        See what {selectedProfile.name} has been up to recently
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div className="bg-green-100 p-2 rounded-full text-green-600">
+                            <Award size={20} />
                           </div>
-                          <p className="text-sm text-gray-600 mt-1.5">Score: 85% - Great progress in multiplication!</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-5 flex items-start gap-4">
-                        <div className="bg-blue-100 text-blue-700 p-3 rounded-full">
-                          <BookOpen size={20} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between">
-                            <h4 className="font-medium text-base">Read a Story</h4>
-                            <span className="text-sm text-gray-500">3 days ago</span>
+                          <div>
+                            <h4 className="font-medium">Completed Math Quiz</h4>
+                            <p className="text-sm text-gray-500">Scored 8/10 on multiplication tables</p>
+                            <p className="text-xs text-gray-400 mt-1">Today, 10:30 AM</p>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1.5">Completed "The Little Prince" - 96 pages</p>
                         </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <div className="text-center p-6 text-gray-500 text-sm bg-gray-50 rounded-lg">
-                      No more activities to show
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="tasks" className="space-y-6">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-lg font-medium">Upcoming Tasks</h3>
-                    <Button size="sm" className="flex items-center gap-1.5 px-4">
-                      <PlusCircle size={16} />
-                      Add Task
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {/* Example task items - would be dynamic in a real app */}
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-yellow-100 text-yellow-700 p-3 rounded-full">
+                        
+                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div className="bg-blue-100 p-2 rounded-full text-blue-600">
                             <BookOpen size={20} />
                           </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between">
-                              <h4 className="font-medium text-base">Reading Assignment</h4>
-                              <Badge variant="outline" className="text-xs px-2.5 py-1">Due tomorrow</Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-2">Read chapters 3-5 of "The Hobbit"</p>
-                            
-                            <div className="mt-4">
-                              <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-                                <span>Progress</span>
-                                <span>30%</span>
-                              </div>
-                              <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-yellow-500" style={{ width: "30%" }}></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-purple-100 text-purple-700 p-3 rounded-full">
-                            <BarChart3 size={20} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between">
-                              <h4 className="font-medium text-base">Math Practice</h4>
-                              <Badge variant="outline" className="text-xs px-2.5 py-1">Due in 3 days</Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-2">Complete 20 division problems</p>
-                            
-                            <div className="mt-4">
-                              <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-                                <span>Progress</span>
-                                <span>0%</span>
-                              </div>
-                              <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-purple-500" style={{ width: "0%" }}></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="progress" className="space-y-6">
-                  <h3 className="text-lg font-medium mb-5">Learning Progress</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-                    <Card className="overflow-hidden">
-                      <CardHeader className="pb-2 pt-5 px-5">
-                        <CardTitle className="text-base">Reading Skills</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-5 pb-5">
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
-                          <div className="h-full bg-green-500" style={{ width: "75%" }}></div>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>Beginner</span>
-                          <span>Advanced</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="overflow-hidden">
-                      <CardHeader className="pb-2 pt-5 px-5">
-                        <CardTitle className="text-base">Math Skills</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-5 pb-5">
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
-                          <div className="h-full bg-blue-500" style={{ width: "60%" }}></div>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>Beginner</span>
-                          <span>Advanced</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-3 pt-5 px-5">
-                      <CardTitle className="text-base">Skill Breakdown</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-5">
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between mb-2">
-                            <span className="text-sm">Reading Comprehension</span>
-                            <span className="text-sm font-medium">85%</span>
-                          </div>
-                          <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500" style={{ width: "85%" }}></div>
+                          <div>
+                            <h4 className="font-medium">Read a Story</h4>
+                            <p className="text-sm text-gray-500">Finished "The Little Prince" chapter 3</p>
+                            <p className="text-xs text-gray-400 mt-1">Yesterday, 4:15 PM</p>
                           </div>
                         </div>
                         
-                        <div>
-                          <div className="flex justify-between mb-2">
-                            <span className="text-sm">Vocabulary</span>
-                            <span className="text-sm font-medium">70%</span>
+                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div className="bg-purple-100 p-2 rounded-full text-purple-600">
+                            <Lightbulb size={20} />
                           </div>
-                          <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500" style={{ width: "70%" }}></div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-2">
-                            <span className="text-sm">Addition & Subtraction</span>
-                            <span className="text-sm font-medium">90%</span>
-                          </div>
-                          <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500" style={{ width: "90%" }}></div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-2">
-                            <span className="text-sm">Multiplication & Division</span>
-                            <span className="text-sm font-medium">65%</span>
-                          </div>
-                          <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500" style={{ width: "65%" }}></div>
+                          <div>
+                            <h4 className="font-medium">Learned New Concept</h4>
+                            <p className="text-sm text-gray-500">Introduction to fractions</p>
+                            <p className="text-xs text-gray-400 mt-1">2 days ago, 2:00 PM</p>
                           </div>
                         </div>
                       </div>
@@ -483,126 +373,90 @@ export default function ParentChildPage() {
                   </Card>
                 </TabsContent>
                 
-                <TabsContent value="recommendations" className="space-y-6">
-                  <h3 className="text-lg font-medium mb-5">Personalized Recommendations</h3>
-                  
-                  <div className="space-y-5">
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-blue-100 text-blue-700 p-3 rounded-full">
-                            <Lightbulb size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-base">Based on {selectedProfile.name}'s Learning Style</h4>
-                            <p className="text-sm text-gray-600 mt-2">
-                              As a {selectedProfile.learningStyle} learner, {selectedProfile.name} might benefit from:
-                            </p>
-                            <ul className="list-disc list-inside text-sm text-gray-600 mt-3 space-y-1.5">
-                              {selectedProfile.learningStyle === "visual" && (
-                                <>
-                                  <li>Educational videos with colorful graphics</li>
-                                  <li>Mind maps for organizing information</li>
-                                  <li>Flashcards with pictures</li>
-                                </>
-                              )}
-                              {selectedProfile.learningStyle === "auditory" && (
-                                <>
-                                  <li>Audiobooks and podcasts</li>
-                                  <li>Discussion-based learning</li>
-                                  <li>Reading aloud and verbal repetition</li>
-                                </>
-                              )}
-                              {selectedProfile.learningStyle === "reading" && (
-                                <>
-                                  <li>Text-based materials and books</li>
-                                  <li>Note-taking exercises</li>
-                                  <li>Written instructions and summaries</li>
-                                </>
-                              )}
-                              {selectedProfile.learningStyle === "kinesthetic" && (
-                                <>
-                                  <li>Hands-on experiments and activities</li>
-                                  <li>Building models and physical demonstrations</li>
-                                  <li>Movement-based learning games</li>
-                                </>
-                              )}
-                            </ul>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-purple-100 text-purple-700 p-3 rounded-full">
-                            <BookOpen size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-base">Suggested Activities</h4>
-                            <div className="space-y-3 mt-3">
-                              <div className="border rounded-lg p-4">
-                                <div className="flex justify-between">
-                                  <h5 className="font-medium text-sm">Interactive Math Game</h5>
-                                  <Button variant="ghost" size="sm" className="h-7 text-xs px-3">Start</Button>
-                                </div>
-                                <p className="text-xs text-gray-600 mt-1">Practice multiplication with fun challenges</p>
-                              </div>
-                              
-                              <div className="border rounded-lg p-4">
-                                <div className="flex justify-between">
-                                  <h5 className="font-medium text-sm">Reading Adventure</h5>
-                                  <Button variant="ghost" size="sm" className="h-7 text-xs px-3">Start</Button>
-                                </div>
-                                <p className="text-xs text-gray-600 mt-1">Interactive story with comprehension questions</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-3 pt-5 px-5">
-                      <CardTitle className="text-base">Parent Notes</CardTitle>
-                      <CardDescription>Add notes or reminders for {selectedProfile.name}</CardDescription>
+                <TabsContent value="tasks" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Assigned Tasks</CardTitle>
+                      <CardDescription>
+                        Tasks assigned to {selectedProfile.name}
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="px-5">
+                    <CardContent>
+                      <div className="text-center py-8 text-gray-500">
+                        No tasks assigned yet. Create tasks to help {selectedProfile.name} learn and grow.
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button className="w-full">
+                        <PlusCircle size={16} className="mr-2" />
+                        Assign New Task
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="progress" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Learning Progress</CardTitle>
+                      <CardDescription>
+                        Track {selectedProfile.name}'s progress in different subjects
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-8 text-gray-500">
+                        Progress tracking will be available once {selectedProfile.name} completes some activities.
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="notes" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Parent Notes</CardTitle>
+                      <CardDescription>
+                        Keep notes about {selectedProfile.name}'s development, interests, or concerns
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <Textarea 
-                        placeholder="Write a note or message..." 
+                        placeholder={`Add notes about ${selectedProfile.name} here...`}
+                        className="min-h-[150px]"
                         value={parentNote}
                         onChange={(e) => setParentNote(e.target.value)}
-                        className="min-h-[120px] resize-none"
                       />
-                    </CardContent>
-                    <CardFooter className="px-5 pb-5 pt-2">
                       <Button 
                         onClick={handleSaveNote}
                         disabled={!parentNote.trim()}
-                        className="w-full py-2"
                       >
                         Save Note
                       </Button>
-                    </CardFooter>
+                      
+                      <div className="border-t pt-4 mt-6">
+                        <h4 className="font-medium mb-3">Previous Notes</h4>
+                        <div className="text-center py-4 text-gray-500">
+                          No previous notes found.
+                        </div>
+                      </div>
+                    </CardContent>
                   </Card>
                 </TabsContent>
               </Tabs>
             </div>
           ) : (
-            <div className="border rounded-lg p-10 text-center">
-              <div className="max-w-md mx-auto">
-                <h2 className="text-xl font-semibold mb-3">No Child Selected</h2>
-                <p className="text-gray-500 mb-8">
-                  Select a child from the list to view their details, or add a new child profile.
+            <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg p-10">
+              <div className="text-center">
+                <h3 className="text-xl font-medium text-gray-700 mb-2">Select a child profile</h3>
+                <p className="text-gray-500 mb-6">
+                  Choose a profile from the list to view details and manage activities
                 </p>
                 <Button 
                   onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 px-6 py-2.5"
+                  className="bg-blue-500 hover:bg-blue-600"
                 >
-                  <PlusCircle size={18} />
-                  Add New Child
+                  <PlusCircle size={16} className="mr-2" />
+                  Add New Profile
                 </Button>
               </div>
             </div>
