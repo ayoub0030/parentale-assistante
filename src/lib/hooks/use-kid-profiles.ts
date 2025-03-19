@@ -26,9 +26,14 @@ export function useKidProfiles() {
             }));
             setProfiles(profilesWithDates);
             
-            // Set the first profile as selected if there's at least one and none is selected
-            if (profilesWithDates.length > 0 && !selectedProfileId) {
+            // Check if there's a selected profile ID in localStorage
+            const savedProfileId = localStorage.getItem('selectedChildId');
+            if (savedProfileId && profilesWithDates.some((p: KidProfile) => p.id === savedProfileId)) {
+              setSelectedProfileId(savedProfileId);
+            } else if (profilesWithDates.length > 0 && !selectedProfileId) {
+              // Set the first profile as selected if there's at least one and none is selected
               setSelectedProfileId(profilesWithDates[0].id);
+              localStorage.setItem('selectedChildId', profilesWithDates[0].id);
             }
           }
         } catch (error) {
@@ -59,9 +64,14 @@ export function useKidProfiles() {
           
           setProfiles(profilesWithDates);
           
-          // Set the first profile as selected if there's at least one and none is selected
-          if (profilesWithDates.length > 0 && !selectedProfileId) {
+          // Check if there's a selected profile ID in localStorage
+          const savedProfileId = localStorage.getItem('selectedChildId');
+          if (savedProfileId && profilesWithDates.some((p: KidProfile) => p.id === savedProfileId)) {
+            setSelectedProfileId(savedProfileId);
+          } else if (profilesWithDates.length > 0 && !selectedProfileId) {
+            // Set the first profile as selected if there's at least one and none is selected
             setSelectedProfileId(profilesWithDates[0].id);
+            localStorage.setItem('selectedChildId', profilesWithDates[0].id);
           }
         }
       } catch (error) {
@@ -84,8 +94,14 @@ export function useKidProfiles() {
           }));
           setProfiles(profilesWithDates);
           
-          if (profilesWithDates.length > 0 && !selectedProfileId) {
+          // Check if there's a selected profile ID in localStorage
+          const savedProfileId = localStorage.getItem('selectedChildId');
+          if (savedProfileId && profilesWithDates.some((p: KidProfile) => p.id === savedProfileId)) {
+            setSelectedProfileId(savedProfileId);
+          } else if (profilesWithDates.length > 0 && !selectedProfileId) {
+            // Set the first profile as selected if there's at least one and none is selected
             setSelectedProfileId(profilesWithDates[0].id);
+            localStorage.setItem('selectedChildId', profilesWithDates[0].id);
           }
         }
       } catch (error) {
@@ -103,6 +119,7 @@ export function useKidProfiles() {
       setProfiles(prev => [...prev, profile]);
       setSelectedProfileId(profile.id);
       localStorage.setItem('parentale-assistant-kid-profiles', JSON.stringify([...profiles, profile]));
+      localStorage.setItem('selectedChildId', profile.id);
       return;
     }
     
@@ -136,6 +153,7 @@ export function useKidProfiles() {
         
         setProfiles(prev => [...prev, newProfile]);
         setSelectedProfileId(newProfile.id);
+        localStorage.setItem('selectedChildId', newProfile.id);
       }
     } catch (error) {
       console.error('Error adding profile to Supabase:', error);
@@ -143,6 +161,7 @@ export function useKidProfiles() {
       setProfiles(prev => [...prev, profile]);
       setSelectedProfileId(profile.id);
       localStorage.setItem('parentale-assistant-kid-profiles', JSON.stringify([...profiles, profile]));
+      localStorage.setItem('selectedChildId', profile.id);
     } finally {
       setIsLoading(false);
     }
@@ -208,21 +227,20 @@ export function useKidProfiles() {
   const deleteProfile = async (profileId: string) => {
     if (!supabase) {
       // Fallback to localStorage
-      setProfiles(prev => prev.filter(profile => profile.id !== profileId));
+      const updatedProfiles = profiles.filter(profile => profile.id !== profileId);
+      setProfiles(updatedProfiles);
+      localStorage.setItem('parentale-assistant-kid-profiles', JSON.stringify(updatedProfiles));
       
       // If the deleted profile was selected, select another one if available
       if (selectedProfileId === profileId) {
-        const remainingProfiles = profiles.filter(profile => profile.id !== profileId);
-        if (remainingProfiles.length > 0) {
-          setSelectedProfileId(remainingProfiles[0].id);
+        const newSelectedId = updatedProfiles.length > 0 ? updatedProfiles[0].id : null;
+        setSelectedProfileId(newSelectedId);
+        if (newSelectedId) {
+          localStorage.setItem('selectedChildId', newSelectedId);
         } else {
-          setSelectedProfileId(null);
+          localStorage.removeItem('selectedChildId');
         }
       }
-      
-      localStorage.setItem('parentale-assistant-kid-profiles', JSON.stringify(
-        profiles.filter(profile => profile.id !== profileId)
-      ));
       return;
     }
     
@@ -236,50 +254,56 @@ export function useKidProfiles() {
       if (error) throw error;
       
       // Update local state
-      setProfiles(prev => prev.filter(profile => profile.id !== profileId));
+      const updatedProfiles = profiles.filter(profile => profile.id !== profileId);
+      setProfiles(updatedProfiles);
       
       // If the deleted profile was selected, select another one if available
       if (selectedProfileId === profileId) {
-        const remainingProfiles = profiles.filter(profile => profile.id !== profileId);
-        if (remainingProfiles.length > 0) {
-          setSelectedProfileId(remainingProfiles[0].id);
+        const newSelectedId = updatedProfiles.length > 0 ? updatedProfiles[0].id : null;
+        setSelectedProfileId(newSelectedId);
+        if (newSelectedId) {
+          localStorage.setItem('selectedChildId', newSelectedId);
         } else {
-          setSelectedProfileId(null);
+          localStorage.removeItem('selectedChildId');
         }
       }
     } catch (error) {
       console.error('Error deleting profile from Supabase:', error);
       // Fallback to localStorage
-      setProfiles(prev => prev.filter(profile => profile.id !== profileId));
+      const updatedProfiles = profiles.filter(profile => profile.id !== profileId);
+      setProfiles(updatedProfiles);
+      localStorage.setItem('parentale-assistant-kid-profiles', JSON.stringify(updatedProfiles));
       
+      // If the deleted profile was selected, select another one if available
       if (selectedProfileId === profileId) {
-        const remainingProfiles = profiles.filter(profile => profile.id !== profileId);
-        if (remainingProfiles.length > 0) {
-          setSelectedProfileId(remainingProfiles[0].id);
+        const newSelectedId = updatedProfiles.length > 0 ? updatedProfiles[0].id : null;
+        setSelectedProfileId(newSelectedId);
+        if (newSelectedId) {
+          localStorage.setItem('selectedChildId', newSelectedId);
         } else {
-          setSelectedProfileId(null);
+          localStorage.removeItem('selectedChildId');
         }
       }
-      
-      localStorage.setItem('parentale-assistant-kid-profiles', JSON.stringify(
-        profiles.filter(profile => profile.id !== profileId)
-      ));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Select a profile
+  // Select a child profile
   const selectProfile = (profileId: string) => {
-    setSelectedProfileId(profileId);
+    if (profiles.some((p: KidProfile) => p.id === profileId)) {
+      setSelectedProfileId(profileId);
+      localStorage.setItem('selectedChildId', profileId);
+    }
   };
 
-  // Get the currently selected profile
-  const selectedProfile = profiles.find(profile => profile.id === selectedProfileId) || null;
+  // Get the selected profile
+  const selectedProfile = profiles.find((profile: KidProfile) => profile.id === selectedProfileId) || null;
 
   return {
     profiles,
     selectedProfile,
+    selectedProfileId,
     isLoading,
     addProfile,
     updateProfile,

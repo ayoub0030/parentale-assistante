@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Settings } from "lucide-react";
+import { ModeSwitcher } from "@/components/mode-switcher";
+import { useKidProfiles } from "@/lib/hooks/use-kid-profiles";
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isParentMode, setIsParentMode] = useState(true);
+  const { selectedProfile } = useKidProfiles();
 
   // Check current path to set the correct mode
   useEffect(() => {
@@ -25,51 +27,23 @@ export default function Navbar() {
     }
   }, [pathname]);
 
-  // Handle mode switch
-  const handleModeToggle = (checked: boolean) => {
-    setIsParentMode(checked);
-    if (checked) {
-      router.push("/parent");
-    } else {
-      router.push("/child");
-    }
-  };
-
   return (
     <nav className="w-full border-b border-gray-200 bg-white py-4 px-4 md:px-6 lg:px-8">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-        <div className="flex items-center">
-          <div 
-            className="flex items-center border rounded-full overflow-hidden cursor-pointer shadow-sm"
-            onClick={() => handleModeToggle(!isParentMode)}
-          >
-            <div 
-              className={cn(
-                "px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-2",
-                isParentMode 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-white text-gray-500 hover:text-gray-700"
-              )}
-            >
-              <span>parent</span>
-              {isParentMode && (
-                <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-              )}
-            </div>
-            <div 
-              className={cn(
-                "px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-2",
-                !isParentMode 
-                  ? "bg-green-500 text-white" 
-                  : "bg-white text-gray-500 hover:text-gray-700"
-              )}
-            >
-              <span>child</span>
-              {!isParentMode && (
-                <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-              )}
-            </div>
+        <div className="flex items-center gap-4">
+          {/* Mode indicator */}
+          <div className={cn(
+            "px-4 py-1.5 text-sm font-medium rounded-full",
+            isParentMode 
+              ? "bg-blue-100 text-blue-700" 
+              : "bg-green-100 text-green-700"
+          )}>
+            {isParentMode ? "Parent Mode" : "Child Mode"}
+            {!isParentMode && selectedProfile && `: ${selectedProfile.name}`}
           </div>
+          
+          {/* Mode switcher */}
+          <ModeSwitcher />
         </div>
 
         <div className="flex space-x-6">
@@ -104,7 +78,7 @@ export default function Navbar() {
           
           {/* Settings link for both modes */}
           <Link 
-            href="/settings" 
+            href={isParentMode ? "/parent/settings" : "/child/settings"} 
             className={cn(
               "text-gray-700 font-medium flex items-center gap-1",
               isParentMode ? "hover:text-blue-500" : "hover:text-green-500"
