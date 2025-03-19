@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Settings } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
@@ -100,6 +101,18 @@ export default function Navbar() {
               </Link>
             </>
           )}
+          
+          {/* Settings link for both modes */}
+          <Link 
+            href="/settings" 
+            className={cn(
+              "text-gray-700 font-medium flex items-center gap-1",
+              isParentMode ? "hover:text-blue-500" : "hover:text-green-500"
+            )}
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </Link>
         </div>
       </div>
     </nav>
