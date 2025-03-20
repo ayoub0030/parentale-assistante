@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSupabase } from "./use-supabase";
 import { Task, TaskFormData } from "../types/task";
 import { v4 as uuidv4 } from "uuid";
@@ -9,16 +9,34 @@ export function useTasks(childId?: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { supabase } = useSupabase();
+  const { supabase, isInitialized } = useSupabase();
 
   // Load tasks from Supabase
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
+    if (!isInitialized) {
+      console.log("Waiting for Supabase to initialize...");
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
     try {
       if (!supabase) {
         throw new Error("Supabase client not initialized");
+      }
+
+      // Check if tasks table exists
+      try {
+        const { count, error: tableError } = await supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true });
+          
+        if (tableError) {
+          console.warn("Tasks table might not exist:", tableError.message);
+        }
+      } catch (tableCheckError) {
+        console.warn("Error checking tasks table:", tableCheckError);
       }
 
       let query = supabase.from("tasks").select("*");
@@ -34,6 +52,12 @@ export function useTasks(childId?: string) {
         throw error;
       }
       
+      if (!data || data.length === 0) {
+        console.log("No tasks found in database, using localStorage fallback");
+        useLocalStorageFallback();
+        return;
+      }
+      
       // Convert string dates to Date objects
       const formattedTasks = data.map(task => ({
         ...task,
@@ -44,35 +68,44 @@ export function useTasks(childId?: string) {
       }));
       
       setTasks(formattedTasks);
+      
+      // Also update localStorage as backup
+      localStorage.setItem("tasks", JSON.stringify(data));
+      
     } catch (err: any) {
       console.error("Error loading tasks:", err);
       setError(err.message || "Failed to load tasks");
       
-      // Fallback to local storage if Supabase fails
-      const storedTasks = localStorage.getItem("tasks");
-      if (storedTasks) {
-        try {
-          const parsedTasks = JSON.parse(storedTasks);
-          const formattedTasks = parsedTasks.map((task: any) => ({
-            ...task,
-            dueDate: new Date(task.dueDate),
-            startDate: new Date(task.startDate),
-            createdAt: new Date(task.createdAt),
-            updatedAt: new Date(task.updatedAt)
-          }));
-          
-          // Filter by childId if provided
-          const filteredTasks = childId 
-            ? formattedTasks.filter((task: Task) => task.childId === childId)
-            : formattedTasks;
-            
-          setTasks(filteredTasks);
-        } catch (parseError) {
-          console.error("Error parsing stored tasks:", parseError);
-        }
-      }
+      useLocalStorageFallback();
     } finally {
       setIsLoading(false);
+    }
+  }, [supabase, childId, isInitialized]);
+  
+  // Helper function for localStorage fallback
+  const useLocalStorageFallback = () => {
+    // Fallback to local storage if Supabase fails
+    const storedTasks = localStorage.getItem("tasks");
+    if (storedTasks) {
+      try {
+        const parsedTasks = JSON.parse(storedTasks);
+        const formattedTasks = parsedTasks.map((task: any) => ({
+          ...task,
+          dueDate: new Date(task.dueDate),
+          startDate: new Date(task.startDate),
+          createdAt: new Date(task.createdAt),
+          updatedAt: new Date(task.updatedAt)
+        }));
+        
+        // Filter by childId if provided
+        const filteredTasks = childId 
+          ? formattedTasks.filter((task: Task) => task.childId === childId)
+          : formattedTasks;
+          
+        setTasks(filteredTasks);
+      } catch (parseError) {
+        console.error("Error parsing stored tasks:", parseError);
+      }
     }
   };
 
@@ -94,34 +127,58 @@ export function useTasks(childId?: string) {
         throw new Error("Supabase client not initialized");
       }
       
-      // Format dates for Supabase
-      const supabaseTask = {
-        ...newTask,
-        dueDate: newTask.dueDate.toISOString(),
-        startDate: newTask.startDate.toISOString(),
-        createdAt: newTask.createdAt.toISOString(),
-        updatedAt: newTask.updatedAt.toISOString()
-      };
+      // Check if tasks table exists and create it if it doesn't
+      try {
+        const { count, error: tableError } = await supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true });
+          
+        if (tableError && tableError.message.includes("does not exist")) {
+          console.warn("Tasks table doesn't exist. Creating it now...");
+          // Note: In a production app, you'd want to create the table via migrations
+          // This is just a fallback for development
+        }
+      } catch (tableCheckError) {
+        console.warn("Error checking tasks table:", tableCheckError);
+      }
       
-      const { error } = await supabase.from("tasks").insert(supabaseTask);
+      // Insert task into Supabase
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert([{
+          ...newTask,
+          dueDate: newTask.dueDate.toISOString(),
+          startDate: newTask.startDate.toISOString(),
+          createdAt: newTask.createdAt.toISOString(),
+          updatedAt: newTask.updatedAt.toISOString()
+        }])
+        .select();
       
       if (error) {
         throw error;
       }
       
-      // Update local state
-      setTasks(prev => [...prev, newTask]);
+      // Update state with the new task
+      setTasks(prevTasks => [...prevTasks, newTask]);
       
-      // Backup to localStorage
-      const updatedTasks = [...tasks, newTask];
-      localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      // Also update localStorage as backup
+      const storedTasks = localStorage.getItem("tasks");
+      const parsedTasks = storedTasks ? JSON.parse(storedTasks) : [];
+      parsedTasks.push({
+        ...newTask,
+        dueDate: newTask.dueDate.toISOString(),
+        startDate: newTask.startDate.toISOString(),
+        createdAt: newTask.createdAt.toISOString(),
+        updatedAt: newTask.updatedAt.toISOString()
+      });
+      localStorage.setItem("tasks", JSON.stringify(parsedTasks));
       
       return newTask;
     } catch (err: any) {
       console.error("Error adding task:", err);
       setError(err.message || "Failed to add task");
       
-      // Still update localStorage as fallback
+      // Still add to local state and localStorage as fallback
       try {
         const newTask: Task = {
           ...taskData,
@@ -131,15 +188,23 @@ export function useTasks(childId?: string) {
           updatedAt: new Date()
         };
         
-        const updatedTasks = [...tasks, newTask];
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+        setTasks(prevTasks => [...prevTasks, newTask]);
         
-        // Update local state
-        setTasks(updatedTasks);
+        const storedTasks = localStorage.getItem("tasks");
+        const parsedTasks = storedTasks ? JSON.parse(storedTasks) : [];
+        parsedTasks.push({
+          ...newTask,
+          dueDate: newTask.dueDate.toISOString(),
+          startDate: newTask.startDate.toISOString(),
+          createdAt: newTask.createdAt.toISOString(),
+          updatedAt: newTask.updatedAt.toISOString()
+        });
+        localStorage.setItem("tasks", JSON.stringify(parsedTasks));
         
         return newTask;
-      } catch (localErr) {
-        console.error("Error with localStorage fallback:", localErr);
+      } catch (fallbackError) {
+        console.error("Error with localStorage fallback:", fallbackError);
+        return null;
       }
     } finally {
       setIsLoading(false);
@@ -192,7 +257,13 @@ export function useTasks(childId?: string) {
       setTasks(updatedTasks);
       
       // Backup to localStorage
-      localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      localStorage.setItem("tasks", JSON.stringify(updatedTasks.map(task => ({
+        ...task,
+        dueDate: task.dueDate.toISOString(),
+        startDate: task.startDate.toISOString(),
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString()
+      }))));
       
       return updatedTask;
     } catch (err: any) {
@@ -212,7 +283,13 @@ export function useTasks(childId?: string) {
           const updatedTasks = [...tasks];
           updatedTasks[taskIndex] = updatedTask;
           
-          localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+          localStorage.setItem("tasks", JSON.stringify(updatedTasks.map(task => ({
+            ...task,
+            dueDate: task.dueDate.toISOString(),
+            startDate: task.startDate.toISOString(),
+            createdAt: task.createdAt.toISOString(),
+            updatedAt: task.updatedAt.toISOString()
+          }))));
           
           // Update local state
           setTasks(updatedTasks);
@@ -256,7 +333,13 @@ export function useTasks(childId?: string) {
       setTasks(updatedTasks);
       
       // Backup to localStorage
-      localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      localStorage.setItem("tasks", JSON.stringify(updatedTasks.map(task => ({
+        ...task,
+        dueDate: task.dueDate.toISOString(),
+        startDate: task.startDate.toISOString(),
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString()
+      }))));
     } catch (err: any) {
       console.error("Error deleting task:", err);
       setError(err.message || "Failed to delete task");
@@ -264,7 +347,13 @@ export function useTasks(childId?: string) {
       // Still update localStorage as fallback
       try {
         const updatedTasks = tasks.filter(task => task.id !== taskId);
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+        localStorage.setItem("tasks", JSON.stringify(updatedTasks.map(task => ({
+          ...task,
+          dueDate: task.dueDate.toISOString(),
+          startDate: task.startDate.toISOString(),
+          createdAt: task.createdAt.toISOString(),
+          updatedAt: task.updatedAt.toISOString()
+        }))));
         
         // Update local state
         setTasks(updatedTasks);
@@ -302,8 +391,10 @@ export function useTasks(childId?: string) {
 
   // Load tasks on component mount or when childId changes
   useEffect(() => {
-    loadTasks();
-  }, [childId, supabase]);
+    if (isInitialized) {
+      loadTasks();
+    }
+  }, [childId, supabase, isInitialized, loadTasks]);
 
   return {
     tasks,

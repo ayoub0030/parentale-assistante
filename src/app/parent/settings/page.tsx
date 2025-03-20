@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Save, Lock, CheckCircle } from "lucide-react";
+import { AlertCircle, Save, Lock, CheckCircle, Database } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSupabase } from "@/lib/hooks/use-supabase";
 
 export default function SettingsPage() {
   const [currentPin, setCurrentPin] = useState("");
@@ -14,12 +15,20 @@ export default function SettingsPage() {
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [apiKeySuccess, setApiKeySuccess] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState("");
+  const { apiKey, updateApiKey } = useSupabase();
+  const [supabaseApiKey, setSupabaseApiKey] = useState("");
 
-  // Load the current PIN on component mount
+  // Load the current PIN and API key on component mount
   useEffect(() => {
     const storedPin = localStorage.getItem("parentPin") || "1234";
     // We don't show the actual PIN for security, just placeholder
     setCurrentPin("****");
+    
+    // Load Supabase API key
+    const storedApiKey = localStorage.getItem("supabaseApiKey") || "";
+    setSupabaseApiKey(storedApiKey);
   }, []);
 
   const handleSavePin = () => {
@@ -59,6 +68,35 @@ export default function SettingsPage() {
     setTimeout(() => {
       setSuccess(false);
     }, 3000);
+  };
+  
+  const handleSaveApiKey = () => {
+    // Reset states
+    setApiKeyError("");
+    setApiKeySuccess(false);
+    
+    // Validate input
+    if (!supabaseApiKey) {
+      setApiKeyError("Please enter a Supabase API key");
+      return;
+    }
+    
+    // Update API key
+    try {
+      const success = updateApiKey(supabaseApiKey);
+      if (success) {
+        setApiKeySuccess(true);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setApiKeySuccess(false);
+        }, 3000);
+      } else {
+        setApiKeyError("Failed to update API key");
+      }
+    } catch (err: any) {
+      setApiKeyError(err.message || "Failed to update API key");
+    }
   };
 
   return (
@@ -138,6 +176,72 @@ export default function SettingsPage() {
               >
                 <Save className="h-4 w-4" />
                 Save PIN
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Supabase Configuration
+            </CardTitle>
+            <CardDescription>
+              Configure your Supabase API key for database access
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {apiKeyError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{apiKeyError}</AlertDescription>
+              </Alert>
+            )}
+            
+            {apiKeySuccess && (
+              <Alert className="mb-4 bg-green-50 border-green-200 text-green-800">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <AlertDescription>Supabase API key updated successfully!</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="supabase-url">Supabase URL</Label>
+                <Input
+                  id="supabase-url"
+                  type="text"
+                  value="https://ohjvkbiwbebeimxuxcgv.supabase.co"
+                  disabled
+                  className="w-full"
+                />
+                <p className="text-sm text-gray-500">
+                  This is the project URL for the Supabase database
+                </p>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="supabase-api-key">Supabase API Key</Label>
+                <Input
+                  id="supabase-api-key"
+                  type="password"
+                  value={supabaseApiKey}
+                  onChange={(e) => setSupabaseApiKey(e.target.value)}
+                  placeholder="Enter your Supabase API key"
+                  className="w-full"
+                />
+                <p className="text-sm text-gray-500">
+                  Use the anon key from your Supabase project settings
+                </p>
+              </div>
+              
+              <Button 
+                onClick={handleSaveApiKey} 
+                className="w-fit mt-2 gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save API Key
               </Button>
             </div>
           </CardContent>
