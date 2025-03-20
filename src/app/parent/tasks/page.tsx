@@ -316,15 +316,21 @@ export default function ParentTasksPage() {
                     </Button>
                   </div>
                 ) : (
-                  filteredTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={handleEditTask}
-                      onDelete={handleDeleteTask}
-                      onStatusChange={updateTaskStatus}
-                    />
-                  ))
+                  filteredTasks.map((task) => {
+                    // Find the child profile for this task
+                    const childProfile = profiles.find(profile => profile.id === task.childId);
+                    
+                    return (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        childProfile={childProfile}
+                        onEdit={handleEditTask}
+                        onDelete={handleDeleteTask}
+                        onStatusChange={updateTaskStatus}
+                      />
+                    );
+                  })
                 )}
               </div>
             </TabsContent>

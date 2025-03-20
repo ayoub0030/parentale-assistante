@@ -9,24 +9,27 @@ import { Task } from "@/lib/types/task";
 import { format } from "date-fns";
 import { 
   Calendar, 
-  Clock, 
   Edit, 
   Trash2, 
   CheckCircle, 
   AlertCircle, 
   ExternalLink,
-  Award
+  Award,
+  User
 } from "lucide-react";
+import { TaskDetailDialog } from "./task-detail-dialog";
+import { KidProfile } from "./kid-profile-form";
 
 interface TaskCardProps {
   task: Task;
+  childProfile?: KidProfile | null;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
 }
 
-export function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
-  const [expanded, setExpanded] = useState(false);
+export function TaskCard({ task, childProfile, onEdit, onDelete, onStatusChange }: TaskCardProps) {
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   
   // Calculate if task is overdue
   const isOverdue = task.status !== 'completed' && new Date() > task.dueDate;
@@ -102,165 +105,112 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardPro
   };
   
   return (
-    <Card className={`overflow-hidden transition-all ${getPriorityColor()} ${expanded ? 'shadow-md' : 'shadow-sm'}`}>
-      <CardContent className="p-0">
-        <div className="p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-medium text-lg">{task.title}</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                <span className="capitalize">{task.subject}</span>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>Due: {format(task.dueDate, "MMM d, yyyy")}</span>
+    <>
+      <Card 
+        className={`overflow-hidden transition-all ${getPriorityColor()} shadow-sm hover:shadow-md cursor-pointer`}
+        onClick={() => setDetailDialogOpen(true)}
+      >
+        <CardContent className="p-0">
+          <div className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-medium text-lg">{task.title}</h3>
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                  <span className="capitalize">{task.subject}</span>
+                  <span>•</span>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Due: {format(task.dueDate, "MMM d, yyyy")}</span>
+                  </div>
+                  {childProfile && (
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <User className="h-3.5 w-3.5" />
+                        <span>{childProfile.name}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
+              
+              <Badge 
+                variant="secondary" 
+                className={`${getStatusBadgeColor()} font-medium`}
+              >
+                {getStatusDisplay()}
+              </Badge>
             </div>
             
-            <Badge 
-              variant="secondary" 
-              className={`${getStatusBadgeColor()} font-medium`}
-            >
-              {getStatusDisplay()}
-            </Badge>
-          </div>
-          
-          <div className="mt-3">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
-              <span>{getProgressValue()}%</span>
-            </div>
-            <Progress 
-              value={getProgressValue()} 
-              className={`h-2 ${getProgressColor()}`}
-            />
-          </div>
-          
-          {/* Expandable content */}
-          <div 
-            className={`overflow-hidden transition-all duration-300 ${
-              expanded ? "max-h-96 mt-4" : "max-h-0"
-            }`}
-          >
-            <div className="space-y-3">
-              <div>
-                <h4 className="text-sm font-medium text-gray-700">Description</h4>
-                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Progress</span>
+                <span>{getProgressValue()}%</span>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <h4 className="font-medium text-gray-700">Start Date</h4>
-                  <p className="text-gray-600">{format(task.startDate, "MMM d, yyyy")}</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-700">Priority</h4>
-                  <p className="capitalize text-gray-600">{task.priority}</p>
-                </div>
-                
-                {task.estimatedTime && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      Estimated Time
-                    </h4>
-                    <p className="text-gray-600">{task.estimatedTime} minutes</p>
-                  </div>
-                )}
-                
-                {task.recurringType && task.recurringType !== "none" && (
-                  <div>
-                    <h4 className="font-medium text-gray-700">Recurrence</h4>
-                    <p className="capitalize text-gray-600">{task.recurringType}</p>
-                  </div>
-                )}
-                
-                {task.rewardPoints && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 flex items-center gap-1">
-                      <Award className="h-3.5 w-3.5" />
-                      Reward Points
-                    </h4>
-                    <p className="text-gray-600">{task.rewardPoints} points</p>
-                  </div>
-                )}
-              </div>
-              
-              {task.resourceUrl && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Resource</h4>
-                  <a 
-                    href={task.resourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
-                  >
-                    View Resource
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              )}
+              <Progress 
+                value={getProgressValue()} 
+                className={`h-2 ${getProgressColor()}`}
+              />
             </div>
           </div>
-        </div>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between p-3 bg-gray-50 border-t">
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => onEdit(task)}
-            className="h-8 px-2 text-gray-600"
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => onDelete(task.id)}
-            className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        </div>
+        </CardContent>
         
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setExpanded(!expanded)}
-            className="h-8 px-3"
-          >
-            {expanded ? "Less" : "More"}
-          </Button>
+        <CardFooter className="flex justify-between p-2 bg-gray-50 border-t">
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-gray-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(task);
+              }}
+            >
+              <Edit className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-red-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete
+            </Button>
+          </div>
           
-          {task.status !== "completed" ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onStatusChange(task.id, "completed")}
-              className="h-8 px-3 text-green-600 border-green-200 hover:bg-green-50"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Complete
-            </Button>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onStatusChange(task.id, "pending")}
-              className="h-8 px-3 text-gray-600"
-            >
-              Reopen
-            </Button>
-          )}
-        </div>
-      </CardFooter>
-    </Card>
+          <div>
+            {task.status !== "completed" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-green-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStatusChange(task.id, "completed");
+                }}
+              >
+                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                Complete
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
+      
+      <TaskDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        task={task}
+        childProfile={childProfile}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onStatusChange={onStatusChange}
+      />
+    </>
   );
 }

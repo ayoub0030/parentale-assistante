@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KidProfileForm, type KidProfile } from "@/components/kid-profile-form";
+import { KidProfileFormDialog } from "@/components/kid-profile-form-dialog";
 import { KidProfileCard } from "@/components/kid-profile-card";
 import { useKidProfiles } from "@/lib/hooks/use-kid-profiles";
 import { 
@@ -25,6 +26,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { TaskCard } from "@/components/task-card";
+import { TaskFormDialog } from "@/components/task-form-dialog";
+import { useTasks } from "@/lib/hooks/use-tasks";
+import { Task, TaskFormData } from "@/lib/types/task";
 
 export default function ParentChildPage() {
   const { 
@@ -37,8 +42,12 @@ export default function ParentChildPage() {
     selectProfile 
   } = useKidProfiles();
   
+  const { tasks, isLoading: tasksLoading, addTask, updateTask, updateTaskStatus, deleteTask } = useTasks();
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [profileToEdit, setProfileToEdit] = useState<KidProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("recent");
@@ -74,11 +83,38 @@ export default function ParentChildPage() {
     }
   };
 
+  const handleAddTask = (taskData: TaskFormData) => {
+    addTask(taskData);
+    setShowTaskForm(false);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setShowTaskForm(true);
+  };
+
+  const handleUpdateTask = (taskData: TaskFormData) => {
+    if (taskData.id) {
+      updateTask(taskData.id, taskData);
+      setTaskToEdit(null);
+    }
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    if (confirm("Are you sure you want to delete this task?")) {
+      deleteTask(taskId);
+    }
+  };
+
   const filteredProfiles = profiles.filter(profile => 
     profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     profile.interests.some(interest => interest.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-  
+
+  const childTasks = selectedProfile 
+    ? tasks.filter(task => task.childId === selectedProfile.id)
+    : [];
+
   // First-time user experience - show welcome and form
   if (profiles.length === 0 && !showAddForm) {
     return (
@@ -382,12 +418,37 @@ export default function ParentChildPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center py-8 text-gray-500">
-                        No tasks assigned yet. Create tasks to help {selectedProfile.name} learn and grow.
-                      </div>
+                      {tasksLoading ? (
+                        <div className="text-center py-8 text-gray-500">
+                          Loading tasks...
+                        </div>
+                      ) : childTasks.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          No tasks assigned yet. Create tasks to help {selectedProfile.name} learn and grow.
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {childTasks.map((task) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              childProfile={selectedProfile}
+                              onEdit={handleEditTask}
+                              onDelete={handleDeleteTask}
+                              onStatusChange={updateTaskStatus}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter>
-                      <Button className="w-full">
+                      <Button 
+                        className="w-full"
+                        onClick={() => {
+                          setTaskToEdit(null);
+                          setShowTaskForm(true);
+                        }}
+                      >
                         <PlusCircle size={16} className="mr-2" />
                         Assign New Task
                       </Button>
@@ -463,6 +524,34 @@ export default function ParentChildPage() {
           )}
         </div>
       </div>
+      
+      {/* Task Form Dialog */}
+      <TaskFormDialog
+        open={showTaskForm}
+        onOpenChange={setShowTaskForm}
+        onSubmit={taskToEdit ? handleUpdateTask : handleAddTask}
+        initialData={taskToEdit || (selectedProfile ? { childId: selectedProfile.id } as Partial<TaskFormData> : undefined)}
+        isEditing={!!taskToEdit}
+      />
+      
+      {/* Profile Form Dialogs */}
+      <KidProfileFormDialog
+        open={showAddForm}
+        onOpenChange={setShowAddForm}
+        onSubmit={handleAddProfile}
+        isLoading={isLoading}
+      />
+      
+      {profileToEdit && (
+        <KidProfileFormDialog
+          open={showEditForm}
+          onOpenChange={setShowEditForm}
+          onSubmit={handleUpdateProfile}
+          existingProfile={profileToEdit}
+          isLoading={isLoading}
+          isEditing={true}
+        />
+      )}
     </div>
   );
 }
