@@ -49,9 +49,7 @@ export default function Navbar() {
         <div className="flex space-x-6">
           {isParentMode ? (
             <>
-              <Link href="/parent/chat" className="text-gray-700 hover:text-blue-500 font-medium">
-                Chat
-              </Link>
+           
               <Link href="/parent/child" className="text-gray-700 hover:text-blue-500 font-medium">
                 Child
               </Link>

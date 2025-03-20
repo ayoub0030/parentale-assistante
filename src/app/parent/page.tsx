@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 export default function ParentPage() {
   const router = useRouter();
   
-  // Redirect to parent/chat by default
+  // Redirect to parent/child by default
   useEffect(() => {
-    router.push("/parent/chat");
+    router.push("/parent/child");
   }, [router]);
   
   return null;
