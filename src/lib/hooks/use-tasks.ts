@@ -115,6 +115,11 @@ export function useTasks(childId?: string) {
     setError(null);
     
     try {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      
+      // Create a new task object
       const newTask: Task = {
         ...taskData,
         id: uuidv4(),
@@ -123,34 +128,16 @@ export function useTasks(childId?: string) {
         updatedAt: new Date()
       };
       
-      if (!supabase) {
-        throw new Error("Supabase client not initialized");
-      }
-      
-      // Check if tasks table exists and create it if it doesn't
-      try {
-        const { count, error: tableError } = await supabase
-          .from("tasks")
-          .select("*", { count: "exact", head: true });
-          
-        if (tableError && tableError.message.includes("does not exist")) {
-          console.warn("Tasks table doesn't exist. Creating it now...");
-          // Note: In a production app, you'd want to create the table via migrations
-          // This is just a fallback for development
-        }
-      } catch (tableCheckError) {
-        console.warn("Error checking tasks table:", tableCheckError);
-      }
-      
-      // Insert task into Supabase
-      const { data, error } = await supabase
+      // Add to Supabase
+      const { error } = await supabase
         .from("tasks")
         .insert([{
           ...newTask,
           dueDate: newTask.dueDate.toISOString(),
           startDate: newTask.startDate.toISOString(),
           createdAt: newTask.createdAt.toISOString(),
-          updatedAt: newTask.updatedAt.toISOString()
+          updatedAt: newTask.updatedAt.toISOString(),
+          plan: newTask.plan || null
         }])
         .select();
       
@@ -239,7 +226,8 @@ export function useTasks(childId?: string) {
         ...updatedTask,
         dueDate: updatedTask.dueDate.toISOString(),
         startDate: updatedTask.startDate.toISOString(),
-        updatedAt: updatedTask.updatedAt.toISOString()
+        updatedAt: updatedTask.updatedAt.toISOString(),
+        plan: updatedTask.plan || null
       };
       
       const { error } = await supabase

@@ -12,6 +12,7 @@ export interface Task {
   recurringType?: 'none' | 'daily' | 'weekly';
   resourceUrl?: string;
   rewardPoints?: number;
+  plan?: string; // AI-generated learning plan
   createdAt: Date;
   updatedAt: Date;
 }
