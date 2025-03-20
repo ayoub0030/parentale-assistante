@@ -20,7 +20,9 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  BookOpen,
+  User
 } from "lucide-react";
 
 export default function ParentTasksPage() {
@@ -115,56 +117,59 @@ export default function ParentTasksPage() {
             </Button>
           </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Task Summary</CardTitle>
+          <Card className="shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                Task Summary
+              </CardTitle>
               <CardDescription>Overview of all tasks</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-blue-500" />
-                      <span className="font-medium">Pending</span>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-blue-50 p-5 rounded-xl shadow-sm hover:shadow transition-all">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-blue-100 p-3 rounded-full mb-2">
+                      <Clock className="h-6 w-6 text-blue-600" />
                     </div>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    <span className="font-medium text-gray-800">Pending</span>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 mt-2 text-lg px-3 py-1">
                       {pendingCount}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-yellow-500" />
-                      <span className="font-medium">In Progress</span>
+                <div className="bg-yellow-50 p-5 rounded-xl shadow-sm hover:shadow transition-all">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-yellow-100 p-3 rounded-full mb-2">
+                      <BarChart3 className="h-6 w-6 text-yellow-600" />
                     </div>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    <span className="font-medium text-gray-800">In Progress</span>
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 mt-2 text-lg px-3 py-1">
                       {inProgressCount}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="font-medium">Completed</span>
+                <div className="bg-green-50 p-5 rounded-xl shadow-sm hover:shadow transition-all">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-green-100 p-3 rounded-full mb-2">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <span className="font-medium text-gray-800">Completed</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 mt-2 text-lg px-3 py-1">
                       {completedCount}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                      <span className="font-medium">Overdue</span>
+                <div className="bg-red-50 p-5 rounded-xl shadow-sm hover:shadow transition-all">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-red-100 p-3 rounded-full mb-2">
+                      <AlertCircle className="h-6 w-6 text-red-600" />
                     </div>
-                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                    <span className="font-medium text-gray-800">Overdue</span>
+                    <Badge variant="secondary" className="bg-red-100 text-red-800 mt-2 text-lg px-3 py-1">
                       {overdueCount}
                     </Badge>
                   </div>
@@ -173,30 +178,33 @@ export default function ParentTasksPage() {
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Filters</CardTitle>
+          <Card className="shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Filter className="h-5 w-5 text-blue-500" />
+                Filters
+              </CardTitle>
               <CardDescription>Narrow down your task list</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-4 space-y-5">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder="Search tasks..."
-                  className="pl-10 py-6"
+                  className="pl-10 py-6 border-gray-300 focus:border-blue-400 focus:ring-blue-400"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <BookOpen className="h-4 w-4 text-blue-500" />
                     Filter by Subject
                   </label>
                   <Select value={filterSubject} onValueChange={setFilterSubject}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-400 focus:ring-blue-400">
                       <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
@@ -210,13 +218,13 @@ export default function ParentTasksPage() {
                   </Select>
                 </div>
                 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <AlertCircle className="h-4 w-4 text-blue-500" />
                     Filter by Priority
                   </label>
                   <Select value={filterPriority} onValueChange={setFilterPriority}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-400 focus:ring-blue-400">
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
@@ -230,13 +238,13 @@ export default function ParentTasksPage() {
                   </Select>
                 </div>
                 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <User className="h-4 w-4 text-blue-500" />
                     Filter by Child
                   </label>
                   <Select value={filterChild} onValueChange={setFilterChild}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-400 focus:ring-blue-400">
                       <SelectValue placeholder="Select child" />
                     </SelectTrigger>
                     <SelectContent>
@@ -253,7 +261,7 @@ export default function ParentTasksPage() {
               
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="w-full mt-4 border-gray-300 hover:bg-gray-50 hover:text-blue-600 transition-colors"
                 onClick={() => {
                   setSearchQuery("");
                   setFilterSubject("all");
@@ -271,41 +279,45 @@ export default function ParentTasksPage() {
         {/* Right Column - Task List */}
         <div className="lg:w-2/3 space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-5 mb-6">
-              <TabsTrigger value="all" className="relative">
+            <TabsList className="grid grid-cols-5 mb-6 p-1 bg-gray-100 rounded-xl">
+              <TabsTrigger value="all" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 All
-                <Badge className="ml-1 bg-gray-100 text-gray-800">{tasks.length}</Badge>
+                <Badge className="ml-2 bg-gray-200 text-gray-800">{tasks.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="pending" className="relative">
+              <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Pending
-                <Badge className="ml-1 bg-blue-100 text-blue-800">{pendingCount}</Badge>
+                <Badge className="ml-2 bg-blue-100 text-blue-800">{pendingCount}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="in-progress" className="relative">
+              <TabsTrigger value="in-progress" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 In Progress
-                <Badge className="ml-1 bg-yellow-100 text-yellow-800">{inProgressCount}</Badge>
+                <Badge className="ml-2 bg-yellow-100 text-yellow-800">{inProgressCount}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="completed" className="relative">
+              <TabsTrigger value="completed" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Completed
-                <Badge className="ml-1 bg-green-100 text-green-800">{completedCount}</Badge>
+                <Badge className="ml-2 bg-green-100 text-green-800">{completedCount}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="overdue" className="relative">
+              <TabsTrigger value="overdue" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Overdue
-                <Badge className="ml-1 bg-red-100 text-red-800">{overdueCount}</Badge>
+                <Badge className="ml-2 bg-red-100 text-red-800">{overdueCount}</Badge>
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value={activeTab} className="mt-0">
               <div className="space-y-4">
                 {isLoading ? (
-                  <div className="text-center py-10">
-                    <p className="text-gray-500">Loading tasks...</p>
+                  <div className="text-center py-16 bg-gray-50 rounded-xl">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-gray-600 font-medium">Loading tasks...</p>
                   </div>
                 ) : filteredTasks.length === 0 ? (
-                  <div className="text-center py-10 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">No tasks found.</p>
+                  <div className="text-center py-16 bg-gray-50 rounded-xl">
+                    <div className="bg-gray-200 p-4 inline-block rounded-full mb-4">
+                      <PlusCircle size={24} className="text-gray-500" />
+                    </div>
+                    <p className="text-gray-600 font-medium mb-4">No tasks found.</p>
                     <Button 
                       variant="outline" 
-                      className="mt-4"
+                      className="border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
                       onClick={() => {
                         setTaskToEdit(null);
                         setShowTaskForm(true);
