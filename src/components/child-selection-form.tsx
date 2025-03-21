@@ -58,7 +58,7 @@ export function ChildSelectionForm({ onCancel }: ChildSelectionFormProps) {
             <CardTitle>No Child Profiles</CardTitle>
           </div>
           <CardDescription>
-            You need to create a child profile first
+            You need to create a child profile First
           </CardDescription>
         </CardHeader>
         <CardContent>
