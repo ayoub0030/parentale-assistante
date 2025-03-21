@@ -168,13 +168,22 @@ export function ChildTaskCard({ task, onStart, onComplete }: ChildTaskCardProps)
     }
   };
   
+  // Handle card click to open task details
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only open details if not clicking on a button
+    if (!(e.target as HTMLElement).closest('button')) {
+      onStart(task);
+    }
+  };
+  
   return (
     <Card 
       className={`overflow-hidden transition-all duration-300 border-2 rounded-xl ${getCardBackground()} ${
         isHovered ? "transform scale-[1.02] shadow-lg" : "shadow-md"
-      }`}
+      } cursor-pointer`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
       <CardContent className="p-0">
         <div className="p-5">
@@ -238,7 +247,10 @@ export function ChildTaskCard({ task, onStart, onComplete }: ChildTaskCardProps)
           </div>
         ) : (
           <Button 
-            onClick={() => onStart(task)} 
+            onClick={(e) => {
+              e.stopPropagation();
+              onStart(task);
+            }} 
             className={`${getButtonColor()} text-white flex items-center gap-2 rounded-full px-5 py-2 font-medium`}
           >
             {task.status === "in-progress" ? (
@@ -259,7 +271,10 @@ export function ChildTaskCard({ task, onStart, onComplete }: ChildTaskCardProps)
           <Button
             variant="outline"
             className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            onClick={() => onComplete(task.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onComplete(task.id);
+            }}
           >
             Mark Complete
           </Button>

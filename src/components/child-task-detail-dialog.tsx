@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/lib/types/task";
 import { format } from "date-fns";
 import { 
@@ -23,7 +24,11 @@ import {
   Globe,
   Dumbbell,
   Lightbulb,
-  Star
+  Star,
+  Brain,
+  Trophy,
+  Gift,
+  Sparkles
 } from "lucide-react";
 
 interface ChildTaskDetailDialogProps {
@@ -43,11 +48,14 @@ export function ChildTaskDetailDialog({
 }: ChildTaskDetailDialogProps) {
   const [currentStep, setCurrentStep] = useState<"details" | "inProgress" | "completed">("details");
   const [showCelebration, setShowCelebration] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("details");
+  const [showReward, setShowReward] = useState(false);
   
   // Reset step when dialog opens/closes
   useEffect(() => {
     if (open) {
       setCurrentStep(task?.status === "completed" ? "completed" : "details");
+      setActiveTab("details");
     }
   }, [open, task]);
   
@@ -55,9 +63,11 @@ export function ChildTaskDetailDialog({
   useEffect(() => {
     if (currentStep === "completed") {
       setShowCelebration(true);
+      
       const timer = setTimeout(() => {
         setShowCelebration(false);
-      }, 3000);
+        setShowReward(true);
+      }, 2000);
       
       return () => clearTimeout(timer);
     }
@@ -135,6 +145,34 @@ export function ChildTaskDetailDialog({
     }
   };
   
+  // Get background color based on subject
+  const getBackgroundColor = () => {
+    if (!task) return "from-amber-50 to-amber-100";
+    
+    switch (task.subject) {
+      case "math":
+        return "from-purple-50 to-purple-100";
+      case "reading":
+        return "from-blue-50 to-blue-100";
+      case "writing":
+        return "from-green-50 to-green-100";
+      case "science":
+        return "from-yellow-50 to-yellow-100";
+      case "coding":
+        return "from-cyan-50 to-cyan-100";
+      case "art":
+        return "from-pink-50 to-pink-100";
+      case "music":
+        return "from-indigo-50 to-indigo-100";
+      case "physical-education":
+        return "from-red-50 to-red-100";
+      case "languages":
+        return "from-emerald-50 to-emerald-100";
+      default:
+        return "from-amber-50 to-amber-100";
+    }
+  };
+  
   // Render content based on current step
   const renderContent = () => {
     if (!task) return null;
@@ -143,217 +181,300 @@ export function ChildTaskDetailDialog({
       case "details":
         return (
           <>
-            <DialogHeader className="pb-4 border-b">
+            <DialogHeader className={`pb-4 border-b bg-gradient-to-r ${getBackgroundColor()} rounded-t-lg p-4`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-gray-100">
+                <div className="p-3 rounded-full bg-white/80 shadow-sm">
                   {getSubjectIcon()}
                 </div>
                 <DialogTitle className="text-2xl font-bold">{task.title}</DialogTitle>
               </div>
             </DialogHeader>
             
-            <div className="py-6 space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">What you'll do:</h3>
-                <p className="text-gray-700">{task.description}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm text-gray-500">Due Date</p>
-                    <p className="font-medium">{format(task.dueDate, "MMMM d, yyyy")}</p>
+            <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full mt-4 px-4">
+              <TabsList className="grid w-full grid-cols-2 h-14 rounded-xl p-1 bg-gray-100">
+                <TabsTrigger 
+                  value="details" 
+                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  <div className="flex flex-col items-center">
+                    <Star className="h-4 w-4 mb-1" />
+                    <span>Task Details</span>
                   </div>
-                </div>
+                </TabsTrigger>
                 
-                {task.estimatedTime && (
-                  <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Time Needed</p>
-                      <p className="font-medium">{task.estimatedTime} minutes</p>
-                    </div>
-                  </div>
-                )}
-                
-                {task.rewardPoints && (
-                  <div className="bg-amber-50 p-4 rounded-lg flex items-center gap-3">
-                    <Award className="h-5 w-5 text-amber-500" />
-                    <div>
-                      <p className="text-sm text-amber-600">Reward</p>
-                      <p className="font-medium">{task.rewardPoints} points</p>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="bg-blue-50 p-4 rounded-lg flex items-center gap-3">
-                  <div className="capitalize font-medium text-blue-600 flex items-center gap-2">
-                    {getSubjectIcon()}
-                    {task.subject} Activity
-                  </div>
-                </div>
-              </div>
-              
-              {task.resourceUrl && (
-                <div className="border rounded-lg p-4 bg-white">
-                  <h3 className="text-lg font-medium mb-2">Resources</h3>
-                  <a 
-                    href={task.resourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline flex items-center gap-2"
+                {task.plan && (
+                  <TabsTrigger 
+                    value="plan" 
+                    className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    Open Learning Resource
-                  </a>
+                    <div className="flex flex-col items-center">
+                      <Brain className="h-4 w-4 mb-1" />
+                      <span>Learning Adventure</span>
+                    </div>
+                  </TabsTrigger>
+                )}
+              </TabsList>
+              
+              <TabsContent value="details" className="mt-4 space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">What you'll do:</h3>
+                  <p className="text-gray-700">{task.description}</p>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Due Date</p>
+                      <p className="font-medium">{format(task.dueDate, "MMMM d, yyyy")}</p>
+                    </div>
+                  </div>
+                  
+                  {task.estimatedTime && (
+                    <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm text-gray-500">Time Needed</p>
+                        <p className="font-medium">{task.estimatedTime} minutes</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {task.rewardPoints && (
+                    <div className="bg-amber-50 p-4 rounded-lg flex items-center gap-3">
+                      <Award className="h-5 w-5 text-amber-500" />
+                      <div>
+                        <p className="text-sm text-amber-600">Reward</p>
+                        <p className="font-medium">{task.rewardPoints} points</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg flex items-center gap-3">
+                    <div className="capitalize font-medium text-blue-600 flex items-center gap-2">
+                      {getSubjectIcon()}
+                      {task.subject} Activity
+                    </div>
+                  </div>
+                </div>
+                
+                {task.resourceUrl && (
+                  <div className="border rounded-lg p-4 bg-white">
+                    <h3 className="text-lg font-medium mb-2">Resources</h3>
+                    <a 
+                      href={task.resourceUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100"
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                      <span>Open Learning Resource</span>
+                    </a>
+                  </div>
+                )}
+              </TabsContent>
+              
+              {task.plan && (
+                <TabsContent value="plan" className="mt-4 overflow-y-auto max-h-[60vh] pr-2">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-full bg-blue-100">
+                        <Brain className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h3 className="text-xl font-bold text-blue-700">Your Learning Adventure</h3>
+                    </div>
+                    
+                    <div className="p-6 border-2 border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 shadow-inner">
+                      <div className="prose prose-sm max-w-none prose-headings:text-blue-700 prose-strong:text-purple-700 prose-p:text-gray-700">
+                        <div className="whitespace-normal break-words">{task.plan}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                      <div className="p-2 bg-yellow-100 rounded-full mt-1">
+                        <Lightbulb className="h-5 w-5 text-yellow-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-yellow-800 mb-1">Learning Tip</h4>
+                        <p className="text-sm text-yellow-700">
+                          Follow this plan step by step to master this task! When you complete it, you'll earn {task.rewardPoints || 0} points and unlock new achievements!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
               )}
-            </div>
+            </Tabs>
             
-            <DialogFooter className="flex justify-between border-t pt-4">
-              <Button 
-                variant="outline" 
+            <DialogFooter className="flex justify-between mt-6 pt-4 border-t px-4 pb-2">
+              <Button
+                variant="outline"
                 onClick={() => onOpenChange(false)}
                 className="gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Tasks
+                Back
               </Button>
               
-              <Button 
-                onClick={handleContinue}
-                className={`${getButtonColor()} text-white gap-2 px-6`}
-              >
-                <PlayCircle className="h-5 w-5" />
-                {task.status === "in-progress" ? "Continue Task" : "Start Task"}
-              </Button>
+              <div className="flex gap-2">
+                {task.status === "completed" ? (
+                  <Badge className="bg-green-100 text-green-800 py-2 px-3 flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    Completed
+                  </Badge>
+                ) : task.status === "in-progress" ? (
+                  <Button
+                    onClick={handleComplete}
+                    className={`${getButtonColor()} gap-2`}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Mark Complete
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleContinue}
+                    className={`${getButtonColor()} gap-2`}
+                  >
+                    <PlayCircle className="h-4 w-4" />
+                    Start Task
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </>
         );
         
       case "inProgress":
         return (
-          <>
-            <DialogHeader className="pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-gray-100">
-                  {getSubjectIcon()}
-                </div>
-                <DialogTitle className="text-2xl font-bold">{task.title}</DialogTitle>
+          <div className="py-10 px-6 text-center">
+            <div className="mb-6">
+              <div className="mx-auto w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <PlayCircle className="h-10 w-10 text-blue-600" />
               </div>
-            </DialogHeader>
-            
-            <div className="py-6 space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Instructions:</h3>
-                <p className="text-gray-700">{task.description}</p>
+              <h2 className="text-2xl font-bold mb-2">You're doing great!</h2>
+              <p className="text-gray-600 mb-6">
+                Keep working on "{task.title}". You can do it!
+              </p>
+              
+              <div className="mb-8">
+                <div className="flex justify-between text-sm text-gray-500 mb-1">
+                  <span>Progress</span>
+                  <span>50%</span>
+                </div>
+                <Progress value={50} className="h-3 bg-blue-200" />
               </div>
               
-              {task.resourceUrl && (
-                <div className="border rounded-lg p-6 bg-white text-center">
-                  <h3 className="text-lg font-medium mb-4">Your Learning Resource</h3>
-                  <a 
-                    href={task.resourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className={`${getButtonColor()} text-white py-3 px-6 rounded-lg inline-flex items-center gap-2`}
-                  >
-                    <ExternalLink className="h-5 w-5" />
-                    Open Resource
-                  </a>
-                  <p className="mt-4 text-sm text-gray-500">
-                    Click the button above to open your learning materials
-                  </p>
-                </div>
-              )}
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-center text-gray-700 mb-2">
-                  When you've finished this task, click the button below:
-                </p>
-                <Button 
-                  onClick={handleComplete}
-                  className="bg-green-500 hover:bg-green-600 text-white w-full gap-2 py-6 text-lg"
+              <div className="flex justify-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep("details")}
                 >
-                  <CheckCircle className="h-5 w-5" />
-                  I've Completed This Task!
+                  View Details
+                </Button>
+                <Button
+                  onClick={handleComplete}
+                  className={`${getButtonColor()}`}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Complete Task
                 </Button>
               </div>
             </div>
-            
-            <DialogFooter className="flex justify-between border-t pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setCurrentStep("details")}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Details
-              </Button>
-            </DialogFooter>
-          </>
+          </div>
         );
         
       case "completed":
         return (
-          <>
-            <DialogHeader className="pb-4 border-b">
-              <DialogTitle className="text-2xl font-bold text-center text-green-600">
-                Great Job!
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="py-10 space-y-6 text-center">
-              <div className={`flex justify-center ${showCelebration ? 'animate-bounce' : ''}`}>
-                <div className="bg-green-100 p-4 rounded-full">
-                  <CheckCircle className="h-16 w-16 text-green-500" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold">You completed: {task.title}</h3>
-                <p className="text-gray-600">Way to go! Keep up the good work!</p>
-              </div>
-              
-              {task.rewardPoints && (
-                <div className={`bg-amber-50 p-6 rounded-lg max-w-xs mx-auto ${showCelebration ? 'animate-pulse' : ''}`}>
-                  <div className="flex justify-center mb-2">
-                    <Award className={`h-8 w-8 text-amber-500 ${showCelebration ? 'animate-spin' : ''}`} />
+          <div className="py-10 px-6 text-center">
+            {showCelebration ? (
+              <div className="mb-6 animate-bounce relative">
+                <div className="mx-auto w-24 h-24 mb-6">
+                  <div className="absolute inset-0 rounded-full bg-green-100 animate-ping opacity-50"></div>
+                  <div className="relative w-full h-full rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="h-12 w-12 text-green-600" />
                   </div>
-                  <p className="text-amber-800 font-medium">You earned</p>
-                  <p className="text-2xl font-bold text-amber-700">{task.rewardPoints} points</p>
                 </div>
-              )}
-              
-              {/* Simple celebration stars */}
-              {showCelebration && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  <div className="star-1 absolute w-4 h-4 bg-yellow-400 rounded-full animate-ping" style={{ top: '10%', left: '20%' }}></div>
-                  <div className="star-2 absolute w-3 h-3 bg-blue-400 rounded-full animate-ping" style={{ top: '20%', right: '15%' }}></div>
-                  <div className="star-3 absolute w-5 h-5 bg-pink-400 rounded-full animate-ping" style={{ bottom: '30%', left: '10%' }}></div>
-                  <div className="star-4 absolute w-4 h-4 bg-green-400 rounded-full animate-ping" style={{ bottom: '20%', right: '20%' }}></div>
-                  <div className="star-5 absolute w-6 h-6 bg-purple-400 rounded-full animate-ping" style={{ top: '40%', left: '50%' }}></div>
+                <h2 className="text-3xl font-bold mb-2 text-green-600">Amazing Job!</h2>
+                <p className="text-xl text-gray-600">
+                  You completed "{task.title}"!
+                </p>
+                
+                {/* CSS-based confetti */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="confetti-piece absolute w-3 h-8 bg-red-500 opacity-80 animate-confetti" style={{ left: '10%', top: '-5%', transform: 'rotate(15deg)' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-yellow-500 opacity-80 animate-confetti" style={{ left: '20%', top: '-5%', transform: 'rotate(32deg)', animationDelay: '0.1s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-blue-500 opacity-80 animate-confetti" style={{ left: '30%', top: '-5%', transform: 'rotate(43deg)', animationDelay: '0.2s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-green-500 opacity-80 animate-confetti" style={{ left: '40%', top: '-5%', transform: 'rotate(12deg)', animationDelay: '0.3s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-purple-500 opacity-80 animate-confetti" style={{ left: '50%', top: '-5%', transform: 'rotate(24deg)', animationDelay: '0.4s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-pink-500 opacity-80 animate-confetti" style={{ left: '60%', top: '-5%', transform: 'rotate(60deg)', animationDelay: '0.5s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-indigo-500 opacity-80 animate-confetti" style={{ left: '70%', top: '-5%', transform: 'rotate(35deg)', animationDelay: '0.6s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-orange-500 opacity-80 animate-confetti" style={{ left: '80%', top: '-5%', transform: 'rotate(25deg)', animationDelay: '0.7s' }}></div>
+                  <div className="confetti-piece absolute w-3 h-8 bg-teal-500 opacity-80 animate-confetti" style={{ left: '90%', top: '-5%', transform: 'rotate(40deg)', animationDelay: '0.8s' }}></div>
                 </div>
-              )}
-            </div>
-            
-            <DialogFooter className="flex justify-center border-t pt-4">
-              <Button 
-                onClick={() => onOpenChange(false)}
-                className="bg-blue-500 hover:bg-blue-600 text-white gap-2 px-6"
-              >
-                Return to Tasks
-              </Button>
-            </DialogFooter>
-          </>
+              </div>
+            ) : showReward ? (
+              <div className="mb-6">
+                <div className="relative mx-auto w-32 h-32 mb-6">
+                  <div className="absolute inset-0 rounded-full bg-amber-100 animate-ping opacity-50"></div>
+                  <div className="relative w-full h-full rounded-full bg-amber-100 flex items-center justify-center">
+                    <Trophy className="h-16 w-16 text-amber-500" />
+                  </div>
+                </div>
+                
+                <h2 className="text-2xl font-bold mb-4 text-amber-600">You earned a reward!</h2>
+                
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6 max-w-sm mx-auto">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Award className="h-6 w-6 text-amber-500" />
+                    <h3 className="text-xl font-bold text-amber-700">{task.rewardPoints || 0} Points</h3>
+                  </div>
+                  <p className="text-amber-700">
+                    Great work! Keep completing tasks to earn more points and unlock special rewards!
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={() => onOpenChange(false)}
+                  className="bg-green-600 hover:bg-green-700 gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Continue Learning
+                </Button>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <div className="mx-auto w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-10 w-10 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Task Completed!</h2>
+                <p className="text-gray-600 mb-6">
+                  You've successfully completed "{task.title}".
+                </p>
+                
+                <div className="mb-8">
+                  <div className="flex justify-between text-sm text-gray-500 mb-1">
+                    <span>Progress</span>
+                    <span>100%</span>
+                  </div>
+                  <Progress value={100} className="h-3 bg-green-200" />
+                </div>
+                
+                <Button
+                  onClick={() => onOpenChange(false)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Back to Tasks
+                </Button>
+              </div>
+            )}
+          </div>
         );
     }
   };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] md:max-w-[800px] p-0 max-h-[90vh] overflow-hidden">
         {renderContent()}
       </DialogContent>
     </Dialog>

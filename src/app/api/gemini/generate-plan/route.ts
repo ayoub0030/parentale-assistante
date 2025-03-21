@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     6. Ways to make the learning engaging and fun based on the child's interests
     7. Methods to assess progress and understanding
 
-    Format your response in markdown with clear sections and bullet points where appropriate.
+    Format your response as a to do list with sections and bullet points where appropriate.
     `;
     
     // Create request body for Gemini API
