@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { CalendarIcon, Clock, Link, Award, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TaskFormData, SUBJECT_OPTIONS, PRIORITY_OPTIONS, RECURRING_OPTIONS } from "@/lib/types/task";
+import { TaskFormData, SUBJECT_OPTIONS, PRIORITY_OPTIONS, RECURRING_OPTIONS, PlanStep } from "@/lib/types/task";
 import { useKidProfiles } from "@/lib/hooks/use-kid-profiles";
 import { PlanPreviewDialog } from "./plan-preview-dialog";
 import { toast } from "@/components/ui/use-toast";
@@ -49,6 +49,7 @@ export function TaskFormDialog({
   
   // Plan generation state
   const [plan, setPlan] = useState(initialData?.plan || "");
+  const [planSteps, setPlanSteps] = useState(initialData?.planSteps || []);
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   
@@ -70,6 +71,7 @@ export function TaskFormDialog({
       setResourceUrl(initialData.resourceUrl || "");
       setRewardPoints(initialData.rewardPoints?.toString() || "");
       setPlan(initialData.plan || "");
+      setPlanSteps(initialData.planSteps || []);
     }
   }, [initialData]);
   
@@ -90,6 +92,7 @@ export function TaskFormDialog({
       resourceUrl: resourceUrl || undefined,
       rewardPoints: rewardPoints ? parseInt(rewardPoints, 10) : undefined,
       plan,
+      planSteps,
     };
     
     // If editing, include the id and submit directly
@@ -159,7 +162,13 @@ export function TaskFormDialog({
   };
   
   // Handle plan submission
-  const handlePlanSubmit = (finalPlan: string) => {
+  const handlePlanSubmit = (updatedPlan: string, updatedPlanSteps?: PlanStep[]) => {
+    setPlan(updatedPlan);
+    if (updatedPlanSteps) {
+      setPlanSteps(updatedPlanSteps);
+    }
+    
+    // Continue with form submission
     const formData: TaskFormData = {
       title,
       description,
@@ -172,7 +181,8 @@ export function TaskFormDialog({
       recurringType: recurringType as "none" | "daily" | "weekly",
       resourceUrl: resourceUrl || undefined,
       rewardPoints: rewardPoints ? parseInt(rewardPoints, 10) : undefined,
-      plan: finalPlan
+      plan: updatedPlan,
+      planSteps: updatedPlanSteps || planSteps
     };
     
     // If editing, include the id

@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import { LearningPlanTodoList } from "./learning-plan-todo-list";
+import { PlanStep } from "@/lib/types/task";
 
 interface PlanPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plan: string;
   onPlanChange: (plan: string) => void;
-  onSubmit: (plan: string) => void;
+  onSubmit: (plan: string, planSteps?: PlanStep[]) => void;
   isLoading?: boolean;
 }
 
@@ -25,10 +27,15 @@ export function PlanPreviewDialog({
   isLoading = false
 }: PlanPreviewDialogProps) {
   const [activeTab, setActiveTab] = useState<string>("preview");
+  const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
 
   const handleSubmit = () => {
-    onSubmit(plan);
+    onSubmit(plan, planSteps);
     onOpenChange(false);
+  };
+
+  const handlePlanStepsChange = (steps: PlanStep[]) => {
+    setPlanSteps(steps);
   };
 
   return (
@@ -55,9 +62,11 @@ export function PlanPreviewDialog({
               <TabsTrigger value="edit">Edit</TabsTrigger>
             </TabsList>
             <TabsContent value="preview" className="p-4 border rounded-md mt-2 min-h-[400px] max-h-[500px] overflow-y-auto">
-              <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                {plan}
-              </div>
+              <LearningPlanTodoList 
+                planText={plan} 
+                onPlanStepsChange={handlePlanStepsChange}
+                readOnly={true}
+              />
             </TabsContent>
             <TabsContent value="edit" className="mt-2">
               <Textarea
