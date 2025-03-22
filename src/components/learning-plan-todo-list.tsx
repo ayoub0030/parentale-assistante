@@ -35,11 +35,13 @@ export function LearningPlanTodoList({
       setSteps(parsedSteps);
       
       // Notify parent component of the initial steps
-      if (onPlanStepsChange) {
+      // But only if we're actually parsing new steps from text
+      if (onPlanStepsChange && !initialPlanSteps) {
         onPlanStepsChange(parsedSteps);
       }
     }
-  }, [planText, initialPlanSteps, onPlanStepsChange]);
+  // Remove onPlanStepsChange from dependencies to prevent infinite loops
+  }, [planText, initialPlanSteps]);
 
   // Check if all steps are completed
   const checkAllCompleted = (steps: PlanStep[]) => {
@@ -115,7 +117,11 @@ export function LearningPlanTodoList({
     );
     setSteps(updatedSteps);
     checkAllCompleted(updatedSteps);
-    onPlanStepsChange(updatedSteps);
+    
+    // Only notify parent if we need to
+    if (onPlanStepsChange) {
+      onPlanStepsChange(updatedSteps);
+    }
   };
 
   // Mark all steps as completed or uncompleted
@@ -130,7 +136,11 @@ export function LearningPlanTodoList({
     
     setSteps(updatedSteps);
     setAllCompleted(shouldComplete);
-    onPlanStepsChange(updatedSteps);
+    
+    // Only notify parent if we need to
+    if (onPlanStepsChange) {
+      onPlanStepsChange(updatedSteps);
+    }
   };
 
   return (
