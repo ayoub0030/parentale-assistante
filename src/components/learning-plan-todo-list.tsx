@@ -157,23 +157,17 @@ export function LearningPlanTodoList({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-blue-700">Your Learning Steps</h3>
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-blue-700 font-medium">
-            Progress: {progress}%
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={toggleAllSteps}
-            className="text-xs flex items-center gap-1"
-            disabled={readOnly}
-          >
-            <CheckCheck className="h-3.5 w-3.5" />
-            {allCompleted ? 'Uncheck All' : 'Check All'}
-          </Button>
-        </div>
+      <div className="flex justify-end items-center mb-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={toggleAllSteps}
+          className="text-xs flex items-center gap-1"
+          disabled={readOnly}
+        >
+          <CheckCheck className="h-3.5 w-3.5" />
+          {allCompleted ? 'Uncheck All' : 'Check All'}
+        </Button>
       </div>
       
       <div className="space-y-2">

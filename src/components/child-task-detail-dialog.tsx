@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task, PlanStep } from "@/lib/types/task";
@@ -296,69 +295,26 @@ export function ChildTaskDetailDialog({
               
               {task.plan && (
                 <TabsContent value="plan" className="mt-4">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-blue-600 mb-4 flex items-center gap-2">
-                        <Brain className="h-5 w-5" />
-                        Your Learning Plan
-                      </h3>
-                      
-                      <LearningPlanTodoList 
-                        planText={task.plan}
-                        planSteps={task.planSteps}
-                        onPlanStepsChange={(updatedSteps) => {
-                          const updatedTask = {
-                            ...task,
-                            planSteps: updatedSteps
-                          };
-                          if (onTaskUpdate) {
-                            onTaskUpdate(updatedTask);
-                          }
-                        }}
-                        readOnly={false}
-                      />
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-600 mb-4 flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      Your Learning Plan
+                    </h3>
                     
-                    <div className="flex-1 border-l pl-6 hidden md:block">
-                      <h3 className="text-lg font-semibold text-green-600 mb-4 flex items-center gap-2">
-                        <PartyPopper className="h-5 w-5" />
-                        Learning Slide
-                      </h3>
-                      
-                      <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-xl border shadow-sm">
-                        <div className="mb-4">
-                          <h4 className="text-lg font-medium text-green-700 mb-2">Your Progress</h4>
-                          <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                            <div 
-                              className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-in-out" 
-                              style={{ 
-                                width: `${task.planSteps && task.planSteps.length > 0
-                                  ? Math.round((task.planSteps.filter(step => step.isCompleted).length / task.planSteps.length) * 100) 
-                                  : 0}%` 
-                              }}
-                            ></div>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            {task.planSteps && task.planSteps.length > 0
-                              ? `${task.planSteps.filter(step => step.isCompleted).length} of ${task.planSteps.length} steps completed`
-                              : '0 steps completed'}
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-lg font-medium text-blue-700 mb-2">Keep Going!</h4>
-                          <p className="text-gray-700 mb-3">
-                            You're doing great! Complete all the steps to finish this task.
-                          </p>
-                          {task.planSteps && task.planSteps.length > 0 && task.planSteps.filter(step => step.isCompleted).length === task.planSteps.length && (
-                            <div className="bg-green-100 p-4 rounded-lg border border-green-200 flex items-center gap-3">
-                              <CheckCircle className="h-6 w-6 text-green-600" />
-                              <p className="font-medium text-green-800">Congratulations! You've completed all steps!</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <LearningPlanTodoList 
+                      planText={task.plan}
+                      planSteps={task.planSteps}
+                      onPlanStepsChange={(updatedSteps) => {
+                        const updatedTask = {
+                          ...task,
+                          planSteps: updatedSteps
+                        };
+                        if (onTaskUpdate) {
+                          onTaskUpdate(updatedTask);
+                        }
+                      }}
+                      readOnly={false}
+                    />
                   </div>
                 </TabsContent>
               )}
@@ -419,7 +375,9 @@ export function ChildTaskDetailDialog({
                   <span>Progress</span>
                   <span>50%</span>
                 </div>
-                <Progress value={50} className="h-3 bg-blue-200" />
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-in-out" style={{ width: '50%' }}></div>
+                </div>
               </div>
               
               <div className="flex justify-center gap-4">
@@ -514,7 +472,9 @@ export function ChildTaskDetailDialog({
                     <span>Progress</span>
                     <span>100%</span>
                   </div>
-                  <Progress value={100} className="h-3 bg-green-200" />
+                  <div className="w-full bg-green-200 rounded-full h-2">
+                    <div className="bg-green-600 h-2 rounded-full transition-all duration-500 ease-in-out" style={{ width: '100%' }}></div>
+                  </div>
                 </div>
                 
                 <Button
