@@ -22,6 +22,7 @@ export function LearningPlanTodoList({
 }: LearningPlanTodoListProps) {
   const [steps, setSteps] = useState<PlanStep[]>([]);
   const [allCompleted, setAllCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // Parse the plan text into steps on first render or when plan changes
   useEffect(() => {
@@ -29,10 +30,12 @@ export function LearningPlanTodoList({
       // Use saved steps if available
       setSteps(initialPlanSteps);
       checkAllCompleted(initialPlanSteps);
+      setProgress(calculateProgress(initialPlanSteps));
     } else if (planText) {
       // Otherwise parse the plan text
       const parsedSteps = parsePlanIntoSteps(planText);
       setSteps(parsedSteps);
+      setProgress(calculateProgress(parsedSteps));
       
       // Notify parent component of the initial steps
       // But only if we're actually parsing new steps from text
@@ -47,6 +50,13 @@ export function LearningPlanTodoList({
   const checkAllCompleted = (steps: PlanStep[]) => {
     const completed = steps.length > 0 && steps.every(step => step.isCompleted);
     setAllCompleted(completed);
+  };
+
+  // Calculate progress percentage
+  const calculateProgress = (steps: PlanStep[]): number => {
+    if (steps.length === 0) return 0;
+    const completedSteps = steps.filter(step => step.isCompleted).length;
+    return Math.round((completedSteps / steps.length) * 100);
   };
 
   // Parse the plan text into steps
@@ -117,6 +127,7 @@ export function LearningPlanTodoList({
     );
     setSteps(updatedSteps);
     checkAllCompleted(updatedSteps);
+    setProgress(calculateProgress(updatedSteps));
     
     // Only notify parent if we need to
     if (onPlanStepsChange) {
@@ -136,6 +147,7 @@ export function LearningPlanTodoList({
     
     setSteps(updatedSteps);
     setAllCompleted(shouldComplete);
+    setProgress(shouldComplete ? 100 : 0);
     
     // Only notify parent if we need to
     if (onPlanStepsChange) {
@@ -147,16 +159,21 @@ export function LearningPlanTodoList({
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-blue-700">Your Learning Steps</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={toggleAllSteps}
-          className="text-xs flex items-center gap-1"
-          disabled={readOnly}
-        >
-          <CheckCheck className="h-3.5 w-3.5" />
-          {allCompleted ? 'Uncheck All' : 'Check All'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-blue-700 font-medium">
+            Progress: {progress}%
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={toggleAllSteps}
+            className="text-xs flex items-center gap-1"
+            disabled={readOnly}
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            {allCompleted ? 'Uncheck All' : 'Check All'}
+          </Button>
+        </div>
       </div>
       
       <div className="space-y-2">

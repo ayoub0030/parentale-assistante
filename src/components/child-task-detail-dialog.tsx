@@ -296,26 +296,69 @@ export function ChildTaskDetailDialog({
               
               {task.plan && (
                 <TabsContent value="plan" className="mt-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-blue-600 mb-4 flex items-center gap-2">
-                      <Brain className="h-5 w-5" />
-                      Your Learning Plan
-                    </h3>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-blue-600 mb-4 flex items-center gap-2">
+                        <Brain className="h-5 w-5" />
+                        Your Learning Plan
+                      </h3>
+                      
+                      <LearningPlanTodoList 
+                        planText={task.plan}
+                        planSteps={task.planSteps}
+                        onPlanStepsChange={(updatedSteps) => {
+                          const updatedTask = {
+                            ...task,
+                            planSteps: updatedSteps
+                          };
+                          if (onTaskUpdate) {
+                            onTaskUpdate(updatedTask);
+                          }
+                        }}
+                        readOnly={false}
+                      />
+                    </div>
                     
-                    <LearningPlanTodoList 
-                      planText={task.plan}
-                      planSteps={task.planSteps}
-                      onPlanStepsChange={(updatedSteps) => {
-                        const updatedTask = {
-                          ...task,
-                          planSteps: updatedSteps
-                        };
-                        if (onTaskUpdate) {
-                          onTaskUpdate(updatedTask);
-                        }
-                      }}
-                      readOnly={false}
-                    />
+                    <div className="flex-1 border-l pl-6 hidden md:block">
+                      <h3 className="text-lg font-semibold text-green-600 mb-4 flex items-center gap-2">
+                        <PartyPopper className="h-5 w-5" />
+                        Learning Slide
+                      </h3>
+                      
+                      <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-xl border shadow-sm">
+                        <div className="mb-4">
+                          <h4 className="text-lg font-medium text-green-700 mb-2">Your Progress</h4>
+                          <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                            <div 
+                              className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-in-out" 
+                              style={{ 
+                                width: `${task.planSteps && task.planSteps.length > 0
+                                  ? Math.round((task.planSteps.filter(step => step.isCompleted).length / task.planSteps.length) * 100) 
+                                  : 0}%` 
+                              }}
+                            ></div>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {task.planSteps && task.planSteps.length > 0
+                              ? `${task.planSteps.filter(step => step.isCompleted).length} of ${task.planSteps.length} steps completed`
+                              : '0 steps completed'}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-lg font-medium text-blue-700 mb-2">Keep Going!</h4>
+                          <p className="text-gray-700 mb-3">
+                            You're doing great! Complete all the steps to finish this task.
+                          </p>
+                          {task.planSteps && task.planSteps.length > 0 && task.planSteps.filter(step => step.isCompleted).length === task.planSteps.length && (
+                            <div className="bg-green-100 p-4 rounded-lg border border-green-200 flex items-center gap-3">
+                              <CheckCircle className="h-6 w-6 text-green-600" />
+                              <p className="font-medium text-green-800">Congratulations! You've completed all steps!</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
               )}
@@ -489,7 +532,7 @@ export function ChildTaskDetailDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] md:max-w-[800px] p-0 max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Task Details</DialogTitle>
         </DialogHeader>
