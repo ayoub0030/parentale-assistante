@@ -157,7 +157,11 @@ export function LearningPlanTodoList({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-semibold text-blue-700">Your Learning Steps</h3>
+          <div className="text-sm text-blue-600">Progress: {progress}%</div>
+        </div>
         <Button 
           variant="outline" 
           size="sm" 
