@@ -302,23 +302,20 @@ export function ChildTaskDetailDialog({
                       Your Learning Plan
                     </h3>
                     
-                    {task.planSteps ? (
-                      <LearningPlanTodoList 
-                        planSteps={task.planSteps}
-                        onPlanStepsChange={(updatedSteps) => {
-                          const updatedTask = {
-                            ...task,
-                            planSteps: updatedSteps
-                          };
+                    <LearningPlanTodoList 
+                      planText={task.plan}
+                      planSteps={task.planSteps}
+                      onPlanStepsChange={(updatedSteps) => {
+                        const updatedTask = {
+                          ...task,
+                          planSteps: updatedSteps
+                        };
+                        if (onTaskUpdate) {
                           onTaskUpdate(updatedTask);
-                        }}
-                        readOnly={false}
-                      />
-                    ) : (
-                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 whitespace-pre-wrap">
-                        {task.plan}
-                      </div>
-                    )}
+                        }
+                      }}
+                      readOnly={false}
+                    />
                   </div>
                 </TabsContent>
               )}
