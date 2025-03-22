@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     Priority: ${task.priority}
     Estimated Time: ${task.estimatedTime || 'Not specified'} minutes
     
-    Please create a comprehensive learning plan that includes:
+    Please create a comprehensive to do list learning plan that includes:
     1. Clear learning objectives
     2. Step-by-step activities tailored to the child's learning style and interests
     3. Required materials or resources
@@ -48,7 +48,16 @@ export async function POST(request: NextRequest) {
     6. Ways to make the learning engaging and fun based on the child's interests
     7. Methods to assess progress and understanding
 
-    Format your response as a to do list with sections and bullet points where appropriate.
+    IMPORTANT: Format your response as a structured to-do list with clear sections. Each section should have bullet points or numbered steps that can be checked off as they are completed. Use markdown formatting with headers and lists.
+
+    For example:
+    
+    1. First activity (15 minutes)
+    2. Second activity (20 minutes)
+    3. Third activity (10 minutes)
+
+
+    Make sure each activity is clear, concise, and actionable so the child can check them off as they complete them.and make your response small not long.
     `;
     
     // Create request body for Gemini API

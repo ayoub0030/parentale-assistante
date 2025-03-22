@@ -64,7 +64,8 @@ export function useTasks(childId?: string) {
         dueDate: new Date(task.dueDate),
         startDate: new Date(task.startDate),
         createdAt: new Date(task.createdAt),
-        updatedAt: new Date(task.updatedAt)
+        updatedAt: new Date(task.updatedAt),
+        planSteps: task.planSteps ? JSON.parse(task.planSteps) : null
       }));
       
       setTasks(formattedTasks);
@@ -94,7 +95,8 @@ export function useTasks(childId?: string) {
           dueDate: new Date(task.dueDate),
           startDate: new Date(task.startDate),
           createdAt: new Date(task.createdAt),
-          updatedAt: new Date(task.updatedAt)
+          updatedAt: new Date(task.updatedAt),
+          planSteps: task.planSteps ? JSON.parse(task.planSteps) : null
         }));
         
         // Filter by childId if provided
@@ -137,7 +139,8 @@ export function useTasks(childId?: string) {
           startDate: newTask.startDate.toISOString(),
           createdAt: newTask.createdAt.toISOString(),
           updatedAt: newTask.updatedAt.toISOString(),
-          plan: newTask.plan || null
+          plan: newTask.plan || null,
+          planSteps: newTask.planSteps ? JSON.stringify(newTask.planSteps) : null
         }])
         .select();
       
@@ -156,7 +159,8 @@ export function useTasks(childId?: string) {
         dueDate: newTask.dueDate.toISOString(),
         startDate: newTask.startDate.toISOString(),
         createdAt: newTask.createdAt.toISOString(),
-        updatedAt: newTask.updatedAt.toISOString()
+        updatedAt: newTask.updatedAt.toISOString(),
+        planSteps: newTask.planSteps ? JSON.stringify(newTask.planSteps) : null
       });
       localStorage.setItem("tasks", JSON.stringify(parsedTasks));
       
@@ -184,7 +188,8 @@ export function useTasks(childId?: string) {
           dueDate: newTask.dueDate.toISOString(),
           startDate: newTask.startDate.toISOString(),
           createdAt: newTask.createdAt.toISOString(),
-          updatedAt: newTask.updatedAt.toISOString()
+          updatedAt: newTask.updatedAt.toISOString(),
+          planSteps: newTask.planSteps ? JSON.stringify(newTask.planSteps) : null
         });
         localStorage.setItem("tasks", JSON.stringify(parsedTasks));
         
@@ -199,7 +204,7 @@ export function useTasks(childId?: string) {
   };
 
   // Update an existing task
-  const updateTask = async (taskId: string, taskData: Partial<TaskFormData>) => {
+  const updateTask = async (updatedTaskData: Task) => {
     setIsLoading(true);
     setError(null);
     
@@ -209,31 +214,31 @@ export function useTasks(childId?: string) {
       }
       
       // Find the task to update
-      const taskIndex = tasks.findIndex(task => task.id === taskId);
+      const taskIndex = tasks.findIndex(task => task.id === updatedTaskData.id);
       if (taskIndex === -1) {
         throw new Error("Task not found");
       }
       
-      // Create updated task
+      // Create updated task with current timestamp
       const updatedTask: Task = {
-        ...tasks[taskIndex],
-        ...taskData,
+        ...updatedTaskData,
         updatedAt: new Date()
       };
       
-      // Format dates for Supabase
+      // Format dates and data for Supabase
       const supabaseTask = {
         ...updatedTask,
         dueDate: updatedTask.dueDate.toISOString(),
         startDate: updatedTask.startDate.toISOString(),
         updatedAt: updatedTask.updatedAt.toISOString(),
-        plan: updatedTask.plan || null
+        plan: updatedTask.plan || null,
+        planSteps: updatedTask.planSteps ? JSON.stringify(updatedTask.planSteps) : null
       };
       
       const { error } = await supabase
         .from("tasks")
         .update(supabaseTask)
-        .eq("id", taskId);
+        .eq("id", updatedTask.id);
       
       if (error) {
         throw error;
@@ -250,7 +255,8 @@ export function useTasks(childId?: string) {
         dueDate: task.dueDate.toISOString(),
         startDate: task.startDate.toISOString(),
         createdAt: task.createdAt.toISOString(),
-        updatedAt: task.updatedAt.toISOString()
+        updatedAt: task.updatedAt.toISOString(),
+        planSteps: task.planSteps
       }))));
       
       return updatedTask;
@@ -260,11 +266,10 @@ export function useTasks(childId?: string) {
       
       // Still update localStorage as fallback
       try {
-        const taskIndex = tasks.findIndex(task => task.id === taskId);
+        const taskIndex = tasks.findIndex(task => task.id === updatedTaskData.id);
         if (taskIndex !== -1) {
           const updatedTask: Task = {
-            ...tasks[taskIndex],
-            ...taskData,
+            ...updatedTaskData,
             updatedAt: new Date()
           };
           
@@ -276,7 +281,8 @@ export function useTasks(childId?: string) {
             dueDate: task.dueDate.toISOString(),
             startDate: task.startDate.toISOString(),
             createdAt: task.createdAt.toISOString(),
-            updatedAt: task.updatedAt.toISOString()
+            updatedAt: task.updatedAt.toISOString(),
+            planSteps: task.planSteps
           }))));
           
           // Update local state
@@ -294,7 +300,14 @@ export function useTasks(childId?: string) {
 
   // Update task status
   const updateTaskStatus = async (taskId: string, status: Task['status']) => {
-    return updateTask(taskId, { status } as any);
+    const taskToUpdate = tasks.find(task => task.id === taskId);
+    if (taskToUpdate) {
+      return updateTask({
+        ...taskToUpdate,
+        status
+      });
+    }
+    return null;
   };
 
   // Delete a task
@@ -326,7 +339,8 @@ export function useTasks(childId?: string) {
         dueDate: task.dueDate.toISOString(),
         startDate: task.startDate.toISOString(),
         createdAt: task.createdAt.toISOString(),
-        updatedAt: task.updatedAt.toISOString()
+        updatedAt: task.updatedAt.toISOString(),
+        planSteps: task.planSteps
       }))));
     } catch (err: any) {
       console.error("Error deleting task:", err);
@@ -340,7 +354,8 @@ export function useTasks(childId?: string) {
           dueDate: task.dueDate.toISOString(),
           startDate: task.startDate.toISOString(),
           createdAt: task.createdAt.toISOString(),
-          updatedAt: task.updatedAt.toISOString()
+          updatedAt: task.updatedAt.toISOString(),
+          planSteps: task.planSteps
         }))));
         
         // Update local state

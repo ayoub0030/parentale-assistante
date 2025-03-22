@@ -26,11 +26,12 @@ import {
 
 interface ChildTaskCardProps {
   task: Task;
-  onStart: (task: Task) => void;
+  onStart: (taskId: string) => void;
   onComplete: (taskId: string) => void;
+  onContinue: (taskId: string) => void;
 }
 
-export function ChildTaskCard({ task, onStart, onComplete }: ChildTaskCardProps) {
+export function ChildTaskCard({ task, onStart, onComplete, onContinue }: ChildTaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   
   // Calculate if task is overdue
@@ -172,8 +173,13 @@ export function ChildTaskCard({ task, onStart, onComplete }: ChildTaskCardProps)
   const handleCardClick = (e: React.MouseEvent) => {
     // Only open details if not clicking on a button
     if (!(e.target as HTMLElement).closest('button')) {
-      onStart(task);
+      onStart(task.id);
     }
+  };
+  
+  // Handle start button click
+  const handleStart = () => {
+    onStart(task.id);
   };
   
   return (
@@ -249,7 +255,7 @@ export function ChildTaskCard({ task, onStart, onComplete }: ChildTaskCardProps)
           <Button 
             onClick={(e) => {
               e.stopPropagation();
-              onStart(task);
+              handleStart();
             }} 
             className={`${getButtonColor()} text-white flex items-center gap-2 rounded-full px-5 py-2 font-medium`}
           >

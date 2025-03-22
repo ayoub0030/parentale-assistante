@@ -1,61 +1,67 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Task } from "@/lib/types/task";
+import { Task, PlanStep } from "@/lib/types/task";
 import { format } from "date-fns";
 import { 
   Calendar, 
   Clock, 
-  Award,
+  BookOpen, 
+  CheckCircle, 
   ExternalLink,
-  CheckCircle,
-  PlayCircle,
+  Award,
+  Brain,
+  Lightbulb,
+  PartyPopper,
+  Star,
   ArrowLeft,
-  BookOpen,
+  PlayCircle,
   Code,
   Calculator,
   Music,
   Palette,
   Globe,
   Dumbbell,
-  Lightbulb,
-  Star,
-  Brain,
   Trophy,
   Gift,
   Sparkles
 } from "lucide-react";
+import { LearningPlanTodoList } from "./learning-plan-todo-list";
 
 interface ChildTaskDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task: Task | null;
+  onStart: (taskId: string) => void;
   onComplete: (taskId: string) => void;
-  onContinue: (taskId: string) => void;
+  onUpdatePlanSteps?: (taskId: string, planSteps: PlanStep[]) => void;
+  onTaskUpdate?: (task: Task) => void;
 }
 
 export function ChildTaskDetailDialog({
   open,
   onOpenChange,
   task,
+  onStart,
   onComplete,
-  onContinue
+  onUpdatePlanSteps,
+  onTaskUpdate
 }: ChildTaskDetailDialogProps) {
   const [currentStep, setCurrentStep] = useState<"details" | "inProgress" | "completed">("details");
   const [showCelebration, setShowCelebration] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("details");
+  const [activeTab, setActiveTab] = useState<string>("info");
   const [showReward, setShowReward] = useState(false);
   
   // Reset step when dialog opens/closes
   useEffect(() => {
     if (open) {
       setCurrentStep(task?.status === "completed" ? "completed" : "details");
-      setActiveTab("details");
+      setActiveTab("info");
     }
   }, [open, task]);
   
@@ -84,11 +90,25 @@ export function ChildTaskDetailDialog({
   // Handle continue task
   const handleContinue = () => {
     if (task) {
-      onContinue(task.id);
+      onStart(task.id);
       setCurrentStep("inProgress");
     }
   };
   
+  // Handle plan steps change
+  const handlePlanStepsChange = (updatedSteps: PlanStep[]) => {
+    if (task && onUpdatePlanSteps) {
+      onUpdatePlanSteps(task.id, updatedSteps);
+    }
+    
+    if (task && onTaskUpdate) {
+      onTaskUpdate({
+        ...task,
+        planSteps: updatedSteps
+      });
+    }
+  };
+
   // Get subject icon
   const getSubjectIcon = () => {
     if (!task) return <Star className="h-6 w-6 text-amber-500" />;
@@ -186,19 +206,19 @@ export function ChildTaskDetailDialog({
                 <div className="p-3 rounded-full bg-white/80 shadow-sm">
                   {getSubjectIcon()}
                 </div>
-                <DialogTitle className="text-2xl font-bold">{task.title}</DialogTitle>
+                <h2 className="text-2xl font-bold">{task.title}</h2>
               </div>
             </DialogHeader>
             
-            <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full mt-4 px-4">
+            <Tabs defaultValue="info" value={activeTab} onValueChange={setActiveTab} className="w-full mt-4 px-4">
               <TabsList className="grid w-full grid-cols-2 h-14 rounded-xl p-1 bg-gray-100">
                 <TabsTrigger 
-                  value="details" 
+                  value="info" 
                   className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
                   <div className="flex flex-col items-center">
                     <Star className="h-4 w-4 mb-1" />
-                    <span>Task Details</span>
+                    <span>Task Info</span>
                   </div>
                 </TabsTrigger>
                 
@@ -209,13 +229,13 @@ export function ChildTaskDetailDialog({
                   >
                     <div className="flex flex-col items-center">
                       <Brain className="h-4 w-4 mb-1" />
-                      <span>Learning Adventure</span>
+                      <span>Learning Plan</span>
                     </div>
                   </TabsTrigger>
                 )}
               </TabsList>
               
-              <TabsContent value="details" className="mt-4 space-y-6">
+              <TabsContent value="info" className="mt-4 space-y-6">
                 <div className="space-y-2">
                   <h3 className="text-lg font-medium">What you'll do:</h3>
                   <p className="text-gray-700">{task.description}</p>
@@ -275,32 +295,30 @@ export function ChildTaskDetailDialog({
               </TabsContent>
               
               {task.plan && (
-                <TabsContent value="plan" className="mt-4 overflow-y-auto max-h-[60vh] pr-2">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-full bg-blue-100">
-                        <Brain className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <h3 className="text-xl font-bold text-blue-700">Your Learning Adventure</h3>
-                    </div>
+                <TabsContent value="plan" className="mt-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-600 mb-4 flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      Your Learning Plan
+                    </h3>
                     
-                    <div className="p-6 border-2 border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 shadow-inner">
-                      <div className="prose prose-sm max-w-none prose-headings:text-blue-700 prose-strong:text-purple-700 prose-p:text-gray-700">
-                        <div className="whitespace-normal break-words">{task.plan}</div>
+                    {task.planSteps ? (
+                      <LearningPlanTodoList 
+                        planSteps={task.planSteps}
+                        onPlanStepsChange={(updatedSteps) => {
+                          const updatedTask = {
+                            ...task,
+                            planSteps: updatedSteps
+                          };
+                          onTaskUpdate(updatedTask);
+                        }}
+                        readOnly={false}
+                      />
+                    ) : (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 whitespace-pre-wrap">
+                        {task.plan}
                       </div>
-                    </div>
-                    
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-                      <div className="p-2 bg-yellow-100 rounded-full mt-1">
-                        <Lightbulb className="h-5 w-5 text-yellow-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-yellow-800 mb-1">Learning Tip</h4>
-                        <p className="text-sm text-yellow-700">
-                          Follow this plan step by step to master this task! When you complete it, you'll earn {task.rewardPoints || 0} points and unlock new achievements!
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </TabsContent>
               )}

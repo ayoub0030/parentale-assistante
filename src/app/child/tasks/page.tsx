@@ -9,7 +9,7 @@ import { ChildTaskCard } from "@/components/child-task-card";
 import { ChildTaskDetailDialog } from "@/components/child-task-detail-dialog";
 import { useTasks } from "@/lib/hooks/use-tasks";
 import { useKidProfiles } from "@/lib/hooks/use-kid-profiles";
-import { Task, SUBJECT_OPTIONS } from "@/lib/types/task";
+import { Task, SUBJECT_OPTIONS, PlanStep } from "@/lib/types/task";
 import { 
   Search, 
   Calendar, 
@@ -22,7 +22,7 @@ import {
 export default function ChildTasksPage() {
   // Hooks
   const { profiles, selectedProfile } = useKidProfiles();
-  const { tasks, isLoading, updateTaskStatus, getTasksByStatus, getOverdueTasks } = useTasks(
+  const { tasks, isLoading, updateTaskStatus, getTasksByStatus, getOverdueTasks, updateTask } = useTasks(
     selectedProfile?.id
   );
   
@@ -73,20 +73,57 @@ export default function ChildTasksPage() {
     }
   };
   
-  // Handle task start/continue
-  const handleTaskStart = (task: Task) => {
-    setSelectedTask(task);
-    setShowTaskDetail(true);
+  // Handle task start
+  const handleTaskStart = (taskId: string) => {
+    // Find the task
+    const task = tasks.find(t => t.id === taskId);
     
-    // If task is pending, mark it as in-progress
-    if (task.status === "pending") {
-      updateTaskStatus(task.id, "in-progress");
+    if (task) {
+      // Update task status
+      updateTaskStatus(taskId, "in-progress");
+      
+      // Show task detail dialog
+      setSelectedTask(task);
+      setShowTaskDetail(true);
     }
   };
   
-  // Handle task completion
+  // Handle task complete
   const handleTaskComplete = (taskId: string) => {
     updateTaskStatus(taskId, "completed");
+    
+    // If the task detail dialog is open, keep it open to show the celebration
+    if (showTaskDetail) {
+      // The dialog will show the celebration animation
+    } else {
+      // If completing from the card directly, no need to show the dialog
+    }
+  };
+  
+  // Handle updating plan steps
+  const handleUpdatePlanSteps = (taskId: string, planSteps: PlanStep[]) => {
+    // Find the task
+    const taskToUpdate = tasks.find(t => t.id === taskId);
+    
+    if (taskToUpdate) {
+      // Update the task with the new plan steps
+      const updatedTask = {
+        ...taskToUpdate,
+        planSteps
+      };
+      
+      // Use the updateTask function from useTasks hook
+      if (typeof updateTask === 'function') {
+        updateTask(updatedTask);
+      }
+    }
+  };
+  
+  // Handle full task update
+  const handleTaskUpdate = (updatedTask: Task) => {
+    if (typeof updateTask === 'function') {
+      updateTask(updatedTask);
+    }
   };
   
   // Handle task continuation
@@ -256,6 +293,7 @@ export default function ChildTasksPage() {
                   task={task}
                   onStart={handleTaskStart}
                   onComplete={handleTaskComplete}
+                  onContinue={handleTaskContinue}
                 />
               ))}
             </div>
@@ -268,8 +306,10 @@ export default function ChildTasksPage() {
         open={showTaskDetail}
         onOpenChange={setShowTaskDetail}
         task={selectedTask}
+        onStart={handleTaskStart}
         onComplete={handleTaskComplete}
-        onContinue={handleTaskContinue}
+        onUpdatePlanSteps={handleUpdatePlanSteps}
+        onTaskUpdate={handleTaskUpdate}
       />
     </div>
   );

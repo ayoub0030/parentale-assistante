@@ -21,6 +21,7 @@ import {
   User,
   BookOpen
 } from "lucide-react";
+import { LearningPlanTodoList } from "./learning-plan-todo-list";
 
 interface TaskDetailDialogProps {
   open: boolean;
@@ -208,9 +209,22 @@ export function TaskDetailDialog({
                   <BookOpen className="h-4 w-4" />
                   AI-Generated Learning Plan
                 </h4>
-                <div className="p-4 border rounded-md mt-2 prose prose-sm max-w-none whitespace-pre-wrap bg-blue-50">
-                  {task.plan}
-                </div>
+                {task.planSteps ? (
+                  <LearningPlanTodoList 
+                    planSteps={task.planSteps} 
+                    onPlanStepsChange={(updatedSteps) => {
+                      onEdit({
+                        ...task,
+                        planSteps: updatedSteps
+                      });
+                    }}
+                    readOnly={false}
+                  />
+                ) : (
+                  <div className="p-4 border rounded-md mt-2 prose prose-sm max-w-none whitespace-pre-wrap bg-blue-50">
+                    {task.plan}
+                  </div>
+                )}
               </div>
             </TabsContent>
           )}

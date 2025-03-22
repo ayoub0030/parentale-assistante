@@ -12,9 +12,16 @@ export interface Task {
   recurringType?: 'none' | 'daily' | 'weekly';
   resourceUrl?: string;
   rewardPoints?: number;
-  plan?: string; // AI-generated learning plan
+  plan?: string; // Original AI-generated learning plan text
+  planSteps?: PlanStep[]; // Parsed plan steps for interactive to-do list
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface PlanStep {
+  id: string;
+  text: string;
+  isCompleted: boolean;
 }
 
 export type TaskFormData = Omit<Task, 'id' | 'status' | 'createdAt' | 'updatedAt'> & {
