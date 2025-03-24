@@ -1,99 +1,145 @@
-# Perfect-Prompt | Contexte Numérique Personnel
+# BrightPath
+![لقطة شاشة 2025-03-23 160002](https://github.com/user-attachments/assets/a1b31ebc-01e1-4772-b8fd-722393688174)
 
-> *Recherchez, consultez, résumez et obtenez des réponses précises à partir de votre contexte numérique personnel*
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.17-green.svg)](https://github.com/yourusername/Perfect-Prompt)
-
-## ✨ Fonctionnalités Principales
-
-### 📊 Analyse Audio Intelligente
-Analysez vos conversations et appels pour extraire des informations essentielles.
-
-<img width="1142" alt="Interface d'analyse audio" src="https://github.com/user-attachments/assets/05b48d11-7c89-4f88-afba-76da91691f61" />
-<img width="1142" alt="Détails de conversation" src="https://github.com/user-attachments/assets/3f6eb8fe-1bde-42cd-8f84-0b8e597431d2" />
-
-### 🔎 Filtrage par Mots-clés
-Trouvez rapidement le contenu pertinent grâce au système de filtrage par mots-clés.
-
-<img width="1142" alt="Filtrage par mots-clés" src="https://github.com/user-attachments/assets/5eae6be7-db50-4ae3-990a-4cb2c934843f" />
-
-### 💻 Filtrage par Application/Fenêtre
-Filtrez votre contenu numérique par application ou fenêtre spécifique.
-
-<img width="1142" alt="Filtrage par application" src="https://github.com/user-attachments/assets/d799a1da-4b22-4956-b917-f8bdf90187a4" />
-
-### 👥 Reconnaissance de Locuteurs
-Identifiez automatiquement les personnes avec qui vous parlez 24/7.
-
-<img width="1170" alt="Filtrage par locuteur" src="https://github.com/user-attachments/assets/dc2f13e0-8745-40a5-be8d-5b34dfa97493" />
-
-### 🎬 Génération de Contenu Vidéo IA (Gemini)
-Transformez vos conversations en contenu vidéo complet - notre fonctionnalité phare propulsée par Gemini AI.
-
-<img width="1142" alt="Génération de contenu vidéo" src="https://github.com/user-attachments/assets/NEW_VIDEO_FEATURE_IMAGE_ID" />
-
-#### Fonctionnalités de Génération Vidéo:
-- ✅ **Titres optimisés SEO** - Titres accrocheurs générés automatiquement
-- ✅ **Suggestions de logo** - Prompts détaillés pour la conception de logos
-- ✅ **Descriptions de vidéo** - Descriptions complètes et engageantes
-- ✅ **Scripts professionnels** - Scripts complets avec indications visuelles
-- ✅ **Mots-clés SEO** - Recommandations de mots-clés optimisés
-- ✅ **Descriptions de scènes** - Instructions visuelles détaillées
-- ✅ **Mode prévisualisation** - Aperçu des résultats en temps réel
-- ✅ **Amélioration par IA** - Fonction d'amélioration intelligente du contenu
-- ✅ **Thème jour/nuit** - Interface adaptable à vos préférences
-- ✅ **Options de partage** - Partagez facilement votre contenu généré
-
-Accédez à cette fonctionnalité via le bouton "Generate Video" qui crée une interface modale interactive avec options d'exportation.
-
-## 🆕 Nouvelles Fonctionnalités (v0.1.17)
-
-### Interface Améliorée
-- 🌓 Mode sombre/clair pour une utilisation jour et nuit
-- ✨ Animations fluides pour une meilleure expérience utilisateur
-- 📱 Interface responsive compatible sur tous les appareils
-
-### Génération Vidéo Intelligente 2.0
-- 🧠 Nouvelle fonction d'amélioration IA par section
-- 👁️ Mode prévisualisation pour voir les résultats en temps réel
-- 🔄 Options de partage intégrées
-- ⚡ Performances optimisées pour des générations plus rapides
-
-### Améliorations Techniques
-- 📊 Optimisation des performances générales
-- 🛠️ Meilleure gestion des erreurs
-- 🔒 Sécurité renforcée
-
-## 🚀 Pour Commencer
-
-```bash
-# Installer les dépendances
-npm install
-# ou
-yarn install
-
-# Lancer en mode développement
-npm run dev
-# ou
-yarn dev
-```
-
-Accédez à l'application sur [http://localhost:3000](http://localhost:3000)
-
-## 📚 Technologies Utilisées
-
-- **Next.js 15** - Framework React moderne
-- **TypeScript** - Typage statique pour un code plus robuste
-- **Tailwind CSS** - Styles utilitaires
-- **Radix UI** - Composants accessibles
-- **Gemini AI** - Génération de contenu vidéo intelligente
-- **Framer Motion** - Animations fluides
-
-## 📄 Licence
-
-Ce projet est sous licence MIT - voir le fichier LICENSE pour plus de détails.
+**BrightPath** is a fun and engaging task manager designed specifically for children. It helps kids stay organized and motivated while allowing parents to create tasks, set deadlines, reward achievements, and track progress in real time. If anything goes wrong, parents receive instant alerts, ensuring a smooth and productive experience for their children.
 
 ---
 
-Développé avec 💙 par l'équipe Perfect-Prompt
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Technologies](#technologies)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Screenshots](#screenshots)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+---
+
+## Overview
+
+BrightPath is designed to make task management enjoyable for children while providing parents with the tools they need to guide and monitor their progress. It includes:
+
+- **A playful, interactive interface for kids** to keep them engaged.
+- **A parental dashboard** for task creation, scheduling, and monitoring.
+- **Gamification and rewards** to motivate children.
+- **Real-time notifications and alerts** to keep parents informed.
+
+BrightPath ensures that children stay productive in a structured yet enjoyable way.
+
+---
+
+## Features
+
+- ✅ **Task Creation & Scheduling** – Parents can create and assign tasks with customizable deadlines.
+- 📊 **Real-Time Monitoring & Progress Tracking** – View live updates on task completion.
+- 🎨 **Interactive Kid Interface** – Engaging visuals and animations designed for children.
+- 🏆 **Reward System & Gamification** – Encourage motivation through achievements and rewards.
+- 🔔 **Notifications & Reminders** – Automatic alerts for both parents and kids.
+- 📈 **Detailed Analytics & Insights** – Track performance and improvement trends.
+
+---
+
+## Technologies
+
+BrightPath is built with modern tools and frameworks, ensuring high performance and seamless user experience:
+
+- **React.js** – For building an interactive and dynamic UI.
+- **Material-UI** – For a polished and user-friendly interface.
+- **Supabase** – Backend for real-time data management and authentication.
+- **Gemini-1.5-Pro** – AI-powered insights and assistance.
+- **Authentication** – Secure user access for both parents and kids.
+- **ScreenPipe** – For enhanced monitoring and data visualization.
+
+---
+
+## Installation
+
+Follow these steps to set up BrightPath locally:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/ayoub0030/parentale-assistante.git
+   cd parentale-assistante
+Install dependencies:
+
+bash
+Copier
+Modifier
+npm install
+or
+
+bash
+Copier
+Modifier
+yarn install
+Set up environment variables:
+Configure your .env file with Supabase credentials and API keys.
+
+Run the development server:
+
+bash
+Copier
+Modifier
+npm run dev
+or
+
+bash
+Copier
+Modifier
+yarn dev
+The application will be available at http://localhost:3000.
+
+Usage
+For **Parents**:
+Create and assign tasks with deadlines.
+
+Monitor child progress in real time.
+
+Set up a reward system to motivate children.
+
+Receive alerts if a task is overdue or uncompleted.
+
+For **Kids**:
+View tasks in a fun, interactive dashboard.
+
+Complete tasks and earn rewards.
+
+Receive reminders and progress updates.
+
+Screenshots
+Here are some visuals of **BrightPath** in action:
+![brightWay-child-profiles-Crud](https://github.com/user-attachments/assets/bad3adde-9d6b-4bc7-8b7c-3962235acc9c)
+
+![brightWayChat](https://github.com/user-attachments/assets/b8bd0e55-03fd-45af-aefd-42e88ecee992)
+
+
+Contributing
+We welcome contributions! If you'd like to improve BrightPath, follow these steps:
+
+Fork the repository.
+
+Create a new branch (git checkout -b feature/YourFeature).
+
+Commit your changes (git commit -m 'Add new feature').
+
+Push to the branch (git push origin feature/YourFeature).
+
+Open a pull request.
+
+Make sure to review the contribution guidelines before submitting.
+
+License
+This project is licensed under the MIT License.
+
+Contact
+For any questions, suggestions, or bug reports, feel free to reach out:
+
+GitHub: BrightPath Repository
+
+Email: ayoub.elmeo@gmail.com
+
+🚀 Empower your child’s productivity while staying in control with BrightPath!
