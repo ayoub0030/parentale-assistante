@@ -40,7 +40,7 @@ const AGENTS: Agent[] = [
     name: "context master",
     description: "analyzes everything: apps, windows, text & audio",
     systemPrompt:
-      "you analyze all types of data from screen recordings and audio transcriptions. provide comprehensive insights.",
+      "you analyze all types of data from screen recordings and the user is a student who need to learn python from their ocr data provide the m with help on what they are doing ",
     dataSelector: (results) => results,
   },
   {
@@ -48,7 +48,7 @@ const AGENTS: Agent[] = [
     name: "window detective",
     description: "focuses on app usage patterns",
     systemPrompt:
-      "you specialize in analyzing app usage patterns and window switching behavior. help users understand their app usage.",
+      "you analyze all types of data from screen recordings and the user is a student who need to learn python from their ocr data provide the m with help on what they are doing.",
     dataSelector: (results) =>
       results
         .filter(
@@ -69,7 +69,7 @@ const AGENTS: Agent[] = [
     name: "text oracle",
     description: "analyzes screen text (OCR)",
     systemPrompt:
-      "you focus on text extracted from screen recordings. help users find and understand text content.",
+      "you analyze all types of data from screen recordings and the user is a student who need to learn python from their ocr data provide the m with help on what they are doing",
     dataSelector: (results) =>
       results
         .filter((item) => item.type === "OCR")
@@ -84,7 +84,7 @@ const AGENTS: Agent[] = [
     name: "voice sage",
     description: "focuses on audio transcriptions",
     systemPrompt:
-      "you analyze audio transcriptions from recordings. help users understand spoken content.",
+      "you analyze all types of data from screen recordings and the user is a student who need to learn python from their ocr data provide the m with help on what they are doing.",
     dataSelector: (results) =>
       results
         .filter((item) => item.type === "Audio")
@@ -375,18 +375,34 @@ export function ChatInterface({ mode = "parent" }: { mode?: "parent" | "child" }
     setIsAiLoading(true);
 
     try {
-      console.log("settings", settings);
+      // Check if we're using Gemini API or Google's API endpoint
+      const isGoogleApi = settings.aiModel.includes('gemini') || 
+                         settings.aiUrl.includes('generativelanguage.googleapis.com');
       
-      // Check if we're using Gemini API
-      const isGeminiApi = settings.aiModel.includes('gemini');
-      
-      // For Gemini API, use our proxy endpoint
-      if (isGeminiApi) {
+      // For Google API, use our proxy endpoint
+      if (isGoogleApi) {
         const apiKey = settings.openaiApiKey || settings.customSettings?.geminiApiKey;
         
         // We should have results at this point, but double check
         const hasSearchResults = results.length > 0;
         
+        // Fetch any active learning plan if available
+        let activeLearningPlan: string | null = null;
+        try {
+          // Try to fetch the most recent active task with a plan
+          const planResponse = await fetch('/api/tasks/active');
+          if (planResponse.ok) {
+            const activeTask = await planResponse.json();
+            if (activeTask?.plan) {
+              activeLearningPlan = activeTask.plan;
+              console.log("Found active learning plan for context");
+            }
+          }
+        } catch (planError) {
+          console.warn("Could not fetch learning plan:", planError);
+          // Continue without plan data - non-critical
+        }
+
         // Create contextual message
         let contextMessage;
         if (hasSearchResults) {
@@ -394,152 +410,254 @@ export function ChatInterface({ mode = "parent" }: { mode?: "parent" | "child" }
           const selectedData = selectedAgent.dataSelector(
             results.filter((_, index) => selectedResults.has(index))
           );
-          contextMessage = `Context data: ${JSON.stringify(selectedData)}`;
-          console.log(`Using ${selectedData.length} OCR items for context`);
+          
+          // Include OCR data in context
+          let contextData = `OCR data: ${JSON.stringify(selectedData)}`;
+          
+          // Include learning plan if available
+          if (activeLearningPlan) {
+            contextData += `\n\nLearning Plan: ${activeLearningPlan}`;
+          }
+          
+          contextMessage = `Context data: ${contextData}`;
+          console.log(`Using ${selectedData.length} OCR items for context ${activeLearningPlan ? 'and learning plan' : ''}`);
         } else {
           // This should not happen with our auto-fetch, but just in case
-          contextMessage = "No OCR data available at the moment. I'll do my best to answer your question.";
+          let noDataMessage = "No OCR data available at the moment.";
+          
+          // Include learning plan if available even if no OCR data
+          if (activeLearningPlan) {
+            noDataMessage += ` However, I do have access to your learning plan: ${activeLearningPlan}`;
+          }
+          
+          contextMessage = noDataMessage + " I'll do my best to answer your question.";
           console.warn("No OCR data available for chat");
         }
         
-        // Use our proxy API route
-        const response = await fetch('/api/gemini', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            apiKey,
-            messages: [
-              {
-                role: "user" as const,
-                content: `You are a helpful assistant specialized as a "${selectedAgent.name}". ${selectedAgent.systemPrompt}
-                  Rules:
-                  - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
-                  - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
-                  - User timezone offset: ${new Date().getTimezoneOffset()}
-                  - ${settings.customPrompt ? `Custom prompt: ${settings.customPrompt}` : ""}
-                  `,
-              },
-              ...chatMessages.map((msg) => ({
-                role: msg.role as "user" | "assistant" | "system",
-                content: msg.content,
-              })),
-              {
-                role: "user" as const,
-                content: `${contextMessage}
-
-                User query: ${floatingInput}`,
-              },
-            ],
-            parameters: {
-              temperature: 0.7,
-              maxTokens: 8192,
-            }
-          }),
-        });
+        const systemPrompt = `You are a helpful assistant specialized as a "${selectedAgent.name}". ${selectedAgent.systemPrompt}
+          Additional Instructions:
+          - You are helping a student who is learning Python programming
+          - When providing code examples, include detailed explanations for each line
+          - Explain programming concepts in simple terms with real-world analogies
+          - If you see Python code in the OCR data, analyze it for errors or improvements
+          - If you see a learning plan, refer to it when answering questions related to the plan's topics
+          - Suggest practical exercises that build on what the student is currently learning
+          
+          Rules:
+          - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
+          - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+          - User timezone offset: ${new Date().getTimezoneOffset()}
+          - ${settings.customPrompt ? `Custom prompt: ${settings.customPrompt}` : ""}
+          `;
         
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || '';
-        
-        setChatMessages((prevMessages) => [
-          ...prevMessages.slice(0, -1),
-          { id: generateId(), role: "assistant", content: content },
-        ]);
-      } else {
-        // Original OpenAI implementation
-        const openai = new OpenAI({
-          apiKey:
-            settings.aiProviderType === "screenpipe-cloud"
-              ? settings.user.token
-              : settings.openaiApiKey,
-          baseURL: settings.aiUrl,
-          dangerouslyAllowBrowser: true,
-        });
-
-        const model = settings.aiModel;
-        const customPrompt = settings.customPrompt || "";
-
-        // Check if we have search results
-        const hasSearchResults = results.length > 0;
-        
-        // Create contextual message based on search results availability
-        let contextMessage;
-        if (hasSearchResults) {
-          // We have search results, use them as context
-          contextMessage = `Context data: ${JSON.stringify(
-            selectedAgent.dataSelector(
-              results.filter((_, index) => selectedResults.has(index))
-            )
-          )}`;
-        } else {
-          // No search results, inform the AI
-          contextMessage = "The user hasn't performed a search yet, so there is no OCR data available. " +
-                          "Please respond to their query as best you can without context data.";
-        }
-
-        const messages = [
-          {
-            role: "user" as const,
-            content: `You are a helpful assistant specialized as a "${selectedAgent.name}". ${selectedAgent.systemPrompt}
-              Rules:
-              - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
-              - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
-              - User timezone offset: ${new Date().getTimezoneOffset()}
-              - ${customPrompt ? `Custom prompt: ${customPrompt}` : ""}
-              `,
-          },
-          ...chatMessages.map((msg) => ({
-            role: msg.role as "user" | "assistant" | "system",
-            content: msg.content,
-          })),
-          {
-            role: "user" as const,
-            content: `${contextMessage}
-
-            User query: ${floatingInput}`,
-          },
-        ];
-
-        console.log("messages", messages);
-
-        abortControllerRef.current = new AbortController();
-        setIsStreaming(true);
-
-        const stream = await openai.chat.completions.create(
-          {
-            model: model,
-            messages: messages,
-            stream: true,
-          },
-          {
-            signal: abortControllerRef.current.signal,
+        try {
+          // Use our proxy API route to avoid CORS issues
+          const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              apiKey,
+              messages: [
+                {
+                  role: "system",
+                  content: systemPrompt,
+                },
+                ...chatMessages.map((msg) => ({
+                  role: msg.role as "user" | "assistant" | "system",
+                  content: msg.content,
+                })),
+                {
+                  role: "user",
+                  content: `${contextMessage}\n\nUser query: ${floatingInput}`,
+                },
+              ],
+              parameters: {
+                temperature: 0.7,
+                maxTokens: 8192,
+              }
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`API request failed: ${errorData.error || response.statusText}`);
           }
-        );
+          
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content || '';
+          
+          setChatMessages((prevMessages) => [
+            ...prevMessages.slice(0, -1),
+            { id: generateId(), role: "assistant", content: content },
+          ]);
+        } catch (error) {
+          console.error("Error calling Gemini API:", error);
+          toast({
+            title: "AI Error",
+            description: `Failed to get a response: ${error instanceof Error ? error.message : String(error)}`,
+            variant: "destructive",
+          });
+          
+          // Update the error message in the chat
+          setChatMessages((prevMessages) => [
+            ...prevMessages.slice(0, -1),
+            { 
+              id: generateId(), 
+              role: "assistant", 
+              content: "I'm sorry, I encountered an error while processing your request. Please check your API key in settings and try again." 
+            },
+          ]);
+        }
+      } else {
+        try {
+          // Standard OpenAI implementation for actual OpenAI endpoints
+          const openai = new OpenAI({
+            apiKey:
+              settings.aiProviderType === "screenpipe-cloud"
+                ? settings.user.token
+                : settings.openaiApiKey,
+            baseURL: settings.aiUrl,
+            dangerouslyAllowBrowser: true,
+          });
 
-        let fullResponse = "";
-        setChatMessages((prevMessages) => [
-          ...prevMessages.slice(0, -1),
-          { id: generateId(), role: "assistant", content: fullResponse },
-        ]);
+          const model = settings.aiModel;
+          const customPrompt = settings.customPrompt || "";
 
-        setIsUserScrolling(false);
-        lastScrollPosition.current = window.scrollY;
-        scrollToBottom();
+          // Check if we have search results
+          const hasSearchResults = results.length > 0;
+          
+          // Fetch any active learning plan if available
+          let activeLearningPlan: string | null = null;
+          try {
+            // Try to fetch the most recent active task with a plan
+            const planResponse = await fetch('/api/tasks/active');
+            if (planResponse.ok) {
+              const activeTask = await planResponse.json();
+              if (activeTask?.plan) {
+                activeLearningPlan = activeTask.plan;
+                console.log("Found active learning plan for context");
+              }
+            }
+          } catch (planError) {
+            console.warn("Could not fetch learning plan:", planError);
+            // Continue without plan data - non-critical
+          }
 
-        for await (const chunk of stream) {
-          console.log("chunk", chunk);
-          const content = chunk.choices[0]?.delta?.content || "";
-          fullResponse += content;
+          // Create contextual message based on search results availability
+          let contextMessage;
+          if (hasSearchResults) {
+            // We have search results, use them as context
+            const selectedData = selectedAgent.dataSelector(
+              results.filter((_, index) => selectedResults.has(index))
+            );
+            
+            // Include OCR data in context
+            let contextData = `OCR data: ${JSON.stringify(selectedData)}`;
+            
+            // Include learning plan if available
+            if (activeLearningPlan) {
+              contextData += `\n\nLearning Plan: ${activeLearningPlan}`;
+            }
+            
+            contextMessage = `Context data: ${contextData}`;
+          } else {
+            // No search results, inform the AI
+            let noDataMessage = "The user hasn't performed a search yet, so there is no OCR data available.";
+            
+            // Include learning plan if available even if no OCR data
+            if (activeLearningPlan) {
+              noDataMessage += ` However, I do have access to their learning plan: ${activeLearningPlan}`;
+            }
+            
+            contextMessage = noDataMessage + " Please respond to their query as best you can.";
+          }
+
+          const messages = [
+            {
+              role: "user" as const,
+              content: `You are a helpful assistant specialized as a "${selectedAgent.name}". ${selectedAgent.systemPrompt}
+                Additional Instructions:
+                - You are helping a student who is learning Python programming
+                - When providing code examples, include detailed explanations for each line
+                - Explain programming concepts in simple terms with real-world analogies
+                - If you see Python code in the OCR data, analyze it for errors or improvements
+                - If you see a learning plan, refer to it when answering questions related to the plan's topics
+                - Suggest practical exercises that build on what the student is currently learning
+                
+                Rules:
+                - Current time (JavaScript Date.prototype.toString): ${new Date().toString()}
+                - User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+                - User timezone offset: ${new Date().getTimezoneOffset()}
+                - ${customPrompt ? `Custom prompt: ${customPrompt}` : ""}
+                `,
+            },
+            ...chatMessages.map((msg) => ({
+              role: msg.role as "user" | "assistant" | "system",
+              content: msg.content,
+            })),
+            {
+              role: "user" as const,
+              content: `${contextMessage}
+
+              User query: ${floatingInput}`,
+            },
+          ];
+
+          console.log("messages", messages);
+
+          abortControllerRef.current = new AbortController();
+          setIsStreaming(true);
+
+          const stream = await openai.chat.completions.create(
+            {
+              model: model,
+              messages: messages,
+              stream: true,
+            },
+            {
+              signal: abortControllerRef.current.signal,
+            }
+          );
+
+          let fullResponse = "";
           setChatMessages((prevMessages) => [
             ...prevMessages.slice(0, -1),
             { id: generateId(), role: "assistant", content: fullResponse },
           ]);
+
+          setIsUserScrolling(false);
+          lastScrollPosition.current = window.scrollY;
           scrollToBottom();
+
+          for await (const chunk of stream) {
+            console.log("chunk", chunk);
+            const content = chunk.choices[0]?.delta?.content || "";
+            fullResponse += content;
+            setChatMessages((prevMessages) => [
+              ...prevMessages.slice(0, -1),
+              { id: generateId(), role: "assistant", content: fullResponse },
+            ]);
+            scrollToBottom();
+          }
+        } catch (error: any) {
+          if (error.toString().includes("unauthorized")) {
+            toast({
+              title: "Error",
+              description: "Please sign in to use AI features",
+              variant: "destructive",
+            });
+          } else if (error.toString().includes("aborted")) {
+            console.log("Streaming was aborted");
+          } else {
+            console.error("Error generating AI response:", error);
+            toast({
+              title: "Error",
+              description: "Failed to generate AI response. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       }
     } catch (error: any) {

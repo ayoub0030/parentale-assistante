@@ -120,7 +120,7 @@ export default function ParentChildPage() {
     return (
       <div className="container mx-auto py-12 px-4">
         <div className="max-w-3xl mx-auto text-center mb-10">
-          <h1 className="text-3xl font-bold text-green-600 mb-6">Welcome to Parentale Assistante!</h1>
+          <h1 className="text-3xl font-bold text-green-600 mb-6">Welcome to Bright Way!</h1>
           <p className="text-xl text-gray-600 mb-8">Let's get started by creating your child's profile</p>
           <p className="text-gray-500 mb-8">
             Creating a profile helps us personalize the experience for your child based on their age, 

@@ -5,13 +5,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const apiKey = body.apiKey;
     
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'API key is required' },
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+          }
+        }
+      );
+    }
+    
     // Remove the API key from the request body before forwarding
     const { apiKey: _, ...requestBody } = body;
     
     // Convert OpenAI format to Gemini format
     const geminiRequestBody = {
       contents: requestBody.messages.map((msg: any) => ({
-        role: msg.role === 'assistant' ? 'model' : msg.role,
+        role: msg.role === 'assistant' ? 'model' : msg.role === 'system' ? 'user' : msg.role,
         parts: [{ text: msg.content }]
       })),
       generationConfig: {
@@ -46,7 +60,14 @@ export async function POST(request: NextRequest) {
       console.error('Gemini API error:', errorData);
       return NextResponse.json(
         { error: 'Failed to generate content', details: errorData },
-        { status: response.status }
+        { 
+          status: response.status,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+          }
+        }
       );
     }
 
@@ -77,12 +98,36 @@ export async function POST(request: NextRequest) {
       },
     };
     
-    return NextResponse.json(openAIResponse);
+    return NextResponse.json(openAIResponse, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   } catch (error) {
     console.error('Error in Gemini API route:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }
     );
   }
+}
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  });
 }

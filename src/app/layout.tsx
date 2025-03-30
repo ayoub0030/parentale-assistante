@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 
 export const metadata: Metadata = {
-  title: "Parentale Assistante",
+  title: "Bright Way",
   description: "Parent-child assistant application",
 };
 
