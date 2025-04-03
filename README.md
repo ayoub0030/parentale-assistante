@@ -1,5 +1,7 @@
 # BrightPath
-![لقطة شاشة 2025-03-23 160002](https://github.com/user-attachments/assets/a1b31ebc-01e1-4772-b8fd-722393688174)[![Watch the video](https://img.youtube.com/vi/oHv4-4HIZz8/0.jpg)](https://youtu.be/oHv4-4HIZz8)
+![لقطة شاشة 2025-03-23 160002]
+(https://github.com/user-attachments/assets/a1b31ebc-01e1-4772-b8fd-722393688174)<iframe width="560" height="315" src="https://www.youtube.com/embed/oHv4-4HIZz8" frameborder="0" allowfullscreen></iframe>
+
 
 **BrightPath** is a fun and engaging task manager designed specifically for children. It helps kids stay organized and motivated while allowing parents to create tasks, set deadlines, reward achievements, and track progress in real time. If anything goes wrong, parents receive instant alerts, ensuring a smooth and productive experience for their children.
 
